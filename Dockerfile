@@ -4,6 +4,7 @@ RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive \
     apt-get -y install software-properties-common &&\
     add-apt-repository 'deb https://ppa.launchpadcontent.net/nicotine-team/stable/ubuntu jammy main' && \
+    apt-get update &&\
     DEBIAN_FRONTEND=noninteractive \
     apt-get install -y nicotine binutils ca-certificates curl dbus fonts-noto-cjk locales openbox patch supervisor tigervnc-standalone-server tigervnc-tools tzdata --no-install-recommends && \
     dbus-uuidgen > /etc/machine-id && \
