@@ -9,7 +9,7 @@ RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive \
     apt-get install -y binutils ca-certificates curl dbus fonts-noto-cjk locales openbox patch supervisor tigervnc-standalone-server tigervnc-tools tzdata --no-install-recommends && \
     DEBIAN_FRONTEND=noninteractive \
-    apt-getinstall -y nicotine && \
+    apt-get install -y nicotine && \
     dbus-uuidgen > /etc/machine-id && \
     locale-gen en_US.UTF-8 && \
     mkdir /usr/share/novnc && \
