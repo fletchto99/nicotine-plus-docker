@@ -28,7 +28,6 @@ RUN apt-get update && \
     usermod -G users nicotine && \
     mkdir /data && \
     apt-get purge -y binutils curl dbus patch && \
-    apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
