@@ -11,8 +11,6 @@ LABEL maintainer="fletchto99"
 
 ENV \
     CUSTOM_PORT="6080" \
-    CUSTOM_P2P_PORT="63807" \
-    CUSTOM_FALLBACK_P2P_PORT="63808" \
     HOME="/config" \
     TITLE="Nicotine"
 
