@@ -1,4 +1,4 @@
-# [fletchto99/nicotine-plus-docker](fletchto99/nicotine-plus-docker)
+# Nicotine-plus-docker
 
 ![GHCR Build Status](https://github.com/fletchto99/nicotine-plus-docker/actions/workflows/ghcr.yml/badge.svg)
 ![Docker Build Status](https://github.com/fletchto99/nicotine-plus-docker/actions/workflows/docker.yml/badge.svg)
