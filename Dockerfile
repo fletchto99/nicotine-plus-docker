@@ -41,14 +41,22 @@ RUN \
     xz-utils && \
     apt-get install -y \
     speech-dispatcher && \
+    apt-get install unzip 
+
+RUN \
     echo "**** install nicotine ****" && \
-    add-apt-repository 'deb https://ppa.launchpadcontent.net/nicotine-team/stable/ubuntu jammy main' && \
-    apt-get update &&\
-    apt-get install -y nicotine && \
+    wget "https://github.com/nicotine-plus/nicotine-plus/releases/latest/download/debian-package.zip" && \
+    unzip debian-package.zip -d nicotine_unzip && \
+    chmod +x nicotine_unzip/*.deb 
+
+RUN apt-get install -y ./nicotine_unzip/*.deb < /dev/null
+
+RUN \
     dbus-uuidgen > /etc/machine-id && \
     sed -i 's|</applications>|  <application title="nicotine plus" type="normal">\n    <maximized>yes</maximized>\n  </application>\n</applications>|' /etc/xdg/openbox/rc.xml && \
     echo "**** cleanup ****" && \
     apt-get clean && \
+    rm -rf nicotine_unzip \
     rm -rf \
     /tmp/* \
     /var/lib/apt/lists/* \
