@@ -21,6 +21,7 @@ This container is based on LinuxServer's [Docker Baseimage KasmVNC](https://gith
 | Variable | Description |
 | :----: | --- |
 | CUSTOM_PORT | Internal port the container listens on for http if it needs to be swapped from the default 6080. |
+| LISTENING_PORT | Listening Port allows other peers on the network to connect to your client and share files. Default is 2234. |
 | CUSTOM_USER | HTTP Basic auth username, abc is default. |
 | PASSWORD | HTTP Basic auth password, abc is default. If unset there will be no auth |
 | SUBFOLDER | Subfolder for the application if running a subfolder reverse proxy, need both slashes IE `/subfolder/` |

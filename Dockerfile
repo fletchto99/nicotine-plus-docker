@@ -12,7 +12,8 @@ LABEL maintainer="fletchto99"
 ENV \
     CUSTOM_PORT="6080" \
     HOME="/config" \
-    TITLE="Nicotine"
+    TITLE="Nicotine" \
+    LISTENING_PORT="2234"
 
 RUN \
     echo "**** install runtime packages ****" && \
