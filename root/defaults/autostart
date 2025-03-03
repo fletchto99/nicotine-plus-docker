@@ -1,1 +1,1 @@
-/usr/bin/nicotine --port $LISTENING_PORT
+/usr/bin/nicotine --isolated --port $LISTENING_PORT
