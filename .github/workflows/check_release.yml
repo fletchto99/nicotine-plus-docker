@@ -16,9 +16,6 @@ permissions:
 jobs:
   check-release:
     runs-on: ubuntu-latest
-    outputs:
-      IS_NEW_RELEASE: ${{ steps.check-release.outputs.IS_NEW_RELEASE }}
-      RELEASE_TAG: ${{ steps.check-release.outputs.RELEASE_TAG }}
 
     steps:
       - name: Check Out Repository
@@ -44,16 +41,13 @@ jobs:
           fi
 
           PREV_RELEASE=$(cat .github/.current-release 2>/dev/null || echo "")
-          echo "release_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "Previous Release: $PREV_RELEASE"
           echo "Current Release: $RELEASE_TAG"
 
           if [ "$RELEASE_TAG" != "$PREV_RELEASE" ]; then
-            echo "New release detected."
+            echo "New release detected: $RELEASE_TAG"
             echo "$RELEASE_TAG" > .github/.current-release
-            echo "IS_NEW_RELEASE=true" >> "$GITHUB_OUTPUT"
 
-            # Commit updated release tag
             git config --global user.name "GitHub Action"
             git config --global user.email "action@github.com"
 
@@ -63,15 +57,8 @@ jobs:
               echo "No changes to commit."
             else
               git commit -m "update version to $RELEASE_TAG"
-              git push
+              git push origin main
             fi
           else
             echo "No new release detected."
-            echo "IS_NEW_RELEASE=false" >> "$GITHUB_OUTPUT"
           fi
-
-  create-release:
-    name: Trigger Publish Workflow
-    needs: check-release
-    if: needs.check-release.outputs.IS_NEW_RELEASE == 'true'
-    uses: ./.github/workflows/publish_release.yml
