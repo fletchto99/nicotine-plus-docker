@@ -60,7 +60,6 @@ RUN \
         /var/lib/apt/lists/* \
         /var/tmp/* \
         /var/cache/apt/archives/* \
-        /var/log/* \
         /usr/share/doc/* \
         /usr/share/man/* \
         /usr/share/locale/* \
