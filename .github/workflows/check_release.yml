@@ -27,7 +27,7 @@ jobs:
         run: |
           echo "Fetching latest release from upstream..."
 
-          RESPONSE="$(curl -s -H \"Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}\" \"${{ env.GITHUB_API_URL }}\")"
+          RESPONSE="$(curl -s "${{ env.GITHUB_API_URL }}")"
           if [ -z "$RESPONSE" ]; then
             echo "::error::Empty response from GitHub API"
             exit 1
