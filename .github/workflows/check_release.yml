@@ -9,7 +9,6 @@ env:
   GITHUB_API_URL: "https://api.github.com/repos/nicotine-plus/nicotine-plus/releases/latest"
 
 permissions:
-  actions: write
   contents: write
   packages: write
 
