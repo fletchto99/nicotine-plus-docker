@@ -1,7 +1,6 @@
 # Nicotine-plus-docker
 
-![GHCR Build Status](https://github.com/fletchto99/nicotine-plus-docker/actions/workflows/ghcr.yml/badge.svg)
-![Docker Build Status](https://github.com/fletchto99/nicotine-plus-docker/actions/workflows/docker.yml/badge.svg)
+![Build Status](https://github.com/fletchto99/nicotine-plus-docker/actions/workflows/publish_release.yml/badge.svg)
 ![Docker Pulls](https://img.shields.io/docker/pulls/fletchto99/nicotine-plus-docker)
 
 [Nicotine-plus](https://nicotine-plus.org/) is an open source graphical client for the Soulseek peer-to-peer network. As per their website, Nicotine+ aims to be a pleasent, Free and Open Source (FOSS) alternative to the official Soulseek client, providing additional functionality while keeping current with the Soulseek protocol.
