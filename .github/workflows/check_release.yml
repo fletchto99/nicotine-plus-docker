@@ -27,7 +27,7 @@ jobs:
         run: |
           echo "Fetching latest release from upstream..."
 
-          RESPONSE="$(curl -s "${{ env.GITHUB_API_URL }}")"
+          RESPONSE="$(curl -s -H \"Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}\" \"${{ env.GITHUB_API_URL }}\")"
           if [ -z "$RESPONSE" ]; then
             echo "::error::Empty response from GitHub API"
             exit 1
@@ -47,16 +47,13 @@ jobs:
             echo "New release detected: $RELEASE_TAG"
             echo "$RELEASE_TAG" > .github/.current-release
 
-            git config --global user.name "GitHub Action"
-            git config --global user.email "action@github.com"
-
             git add .github/.current-release
 
             if git diff --cached --quiet; then
               echo "No changes to commit."
             else
-              git commit -m "update version to $RELEASE_TAG"
-              git push origin main
+              git -c user.name="GitHub Actions" -c user.email="actions@github.com" commit -m "update version to $RELEASE_TAG"
+              git push origin main || { echo '::error::Push failed'; exit 1; }
             fi
           else
             echo "No new release detected."
