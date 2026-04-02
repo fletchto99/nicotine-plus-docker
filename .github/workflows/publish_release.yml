@@ -66,6 +66,10 @@ jobs:
           file: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platform }}
           push: true
+          build-args: |
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+            NICOTINE_VERSION=${{ steps.get_version.outputs.VERSION }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
           outputs: type=image,name=${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
