@@ -16,8 +16,8 @@
 
 The application can be accessed at:
 
-* `http://yourhost:3000/`
-* `https://yourhost:3001/`
+* `http://yourhost:6080/`
+* `https://yourhost:6081/`
 
 ### Options in all Selkies-based GUI containers
 
@@ -29,8 +29,8 @@ This container is based on LinuxServer's [Docker Baseimage Selkies](https://gith
 | :----: | --- |
 | `LISTENING_PORT` | Listening port allows other peers on the network to connect to your client and share files. Default is `2234`. |
 | `NICOTINE_CLI` | Additional CLI flags to pass to Nicotine+. |
-| `CUSTOM_PORT` | Internal port the container listens on for HTTP if it needs to be swapped from the default `3000`. |
-| `CUSTOM_HTTPS_PORT` | Internal port the container listens on for HTTPS if it needs to be swapped from the default `3001`. |
+| `CUSTOM_PORT` | Internal port the container listens on for HTTP if it needs to be swapped from the default `6080`. |
+| `CUSTOM_HTTPS_PORT` | Internal port the container listens on for HTTPS if it needs to be swapped from the default `6081`. |
 | `CUSTOM_USER` | HTTP Basic auth username, `abc` is default. |
 | `PASSWORD` | HTTP Basic auth password, `abc` is default. If unset there will be no auth. |
 | `SUBFOLDER` | Subfolder for the application if running a subfolder reverse proxy, need both slashes IE `/subfolder/`. |
@@ -90,8 +90,8 @@ services:
       - /path/to/incomplete:/data/incomplete_downloads
       - /path/to/shared:/data/shared #optional
     ports:
-      - 3000:3000
-      - 3001:3001
+      - 6080:6080
+      - 6081:6081
       - 2234-2239:2234-2239
     shm_size: "1gb"
     restart: unless-stopped
@@ -107,8 +107,8 @@ docker run -d \
   -e TZ=Etc/UTC \
   -e PASSWORD= `#optional` \
   -e LISTENING_PORT=2234 `#optional` \
-  -p 3000:3000 \
-  -p 3001:3001 \
+  -p 6080:6080 \
+  -p 6081:6081 \
   -p 2234-2239:2234-2239 \
   -v /path/to/data:/config \
   -v /path/to/downloads:/data/downloads \
@@ -125,8 +125,8 @@ Container images are configured using parameters passed at runtime (such as thos
 
 | Parameter | Function |
 | :----: | --- |
-| `-p 3000` | Nicotine+ desktop gui (HTTP). |
-| `-p 3001` | Nicotine+ desktop gui (HTTPS). |
+| `-p 6080` | Nicotine+ desktop gui (HTTP). |
+| `-p 6081` | Nicotine+ desktop gui (HTTPS). |
 | `-p 2234-2239` | Nicotine+ P2P ports. |
 | `-e PUID=1000` | for UserID - see below for explanation. |
 | `-e PGID=1000` | for GroupID - see below for explanation. |

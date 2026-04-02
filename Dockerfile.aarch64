@@ -12,6 +12,8 @@ LABEL maintainer="fletchto99"
 ENV \
   TITLE="Nicotine+" \
   LISTENING_PORT="2234" \
+  CUSTOM_PORT="6080" \
+  CUSTOM_HTTPS_PORT="6081" \
   HARDEN_DESKTOP="true" \
   HARDEN_OPENBOX="true"
 
@@ -38,4 +40,4 @@ COPY root/ /
 
 # ports and volumes
 VOLUME /config
-EXPOSE 3001
+EXPOSE 6080 6081
