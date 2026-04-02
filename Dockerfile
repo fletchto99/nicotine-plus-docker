@@ -5,7 +5,6 @@ FROM ghcr.io/linuxserver/baseimage-selkies:arch
 # set version label
 ARG BUILD_DATE
 ARG VERSION
-ARG NICOTINE_VERSION
 LABEL build_version="version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="fletchto99"
 
@@ -21,7 +20,7 @@ ENV \
 RUN \
   echo "**** install packages ****" && \
   pacman -Sy --noconfirm \
-    "nicotine+${NICOTINE_VERSION:+=$NICOTINE_VERSION}" && \
+    "nicotine+${VERSION:+=$VERSION}" && \
   echo "**** add icon ****" && \
   rsvg-convert -w 256 -h 256 \
     /usr/share/icons/hicolor/scalable/apps/org.nicotine_plus.Nicotine.svg \
