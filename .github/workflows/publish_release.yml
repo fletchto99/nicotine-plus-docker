@@ -18,8 +18,10 @@ jobs:
         include:
           - platform: linux/amd64
             dockerfile: Dockerfile
+            version_file: .github/.current-release-x86_64
           - platform: linux/arm64
             dockerfile: Dockerfile.aarch64
+            version_file: .github/.current-release-aarch64
     env:
       GHCR_REGISTRY: ghcr.io
       GHCR_IMAGE_NAME: ${{ github.repository }}
@@ -33,7 +35,7 @@ jobs:
 
       - name: Read Current Release Version
         id: get_version
-        run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=$(cat ${{ matrix.version_file }})" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
@@ -102,7 +104,7 @@ jobs:
 
       - name: Read Current Release Version
         id: get_version
-        run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=$(cat .github/.current-release-x86_64)" >> "$GITHUB_OUTPUT"
 
       - name: Download digests
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4

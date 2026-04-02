@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  ARCH_MIRROR: "https://mirror.rackspace.com/archlinux/extra/os/x86_64/extra.db"
+  X86_64_MIRROR: "https://mirror.rackspace.com/archlinux/extra/os/x86_64/extra.db"
+  AARCH64_MIRROR: "http://mirror.archlinuxarm.org/aarch64/extra/extra.db"
 
 permissions:
   contents: write
@@ -22,33 +23,55 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check for Latest Upstream Release
+      - name: Check for Latest Upstream Releases
         id: check-release
         run: |
-          echo "Fetching latest nicotine+ version from Arch extra repo..."
+          CHANGED=false
 
-          RELEASE_TAG=$(curl -sL "${{ env.ARCH_MIRROR }}" | tar tzf - | grep -m1 '^nicotine+' | sed 's|^nicotine+-||;s|/.*||')
-          if [ -z "$RELEASE_TAG" ]; then
-            echo "::error::Failed to extract nicotine+ version from Arch mirror."
+          echo "Fetching latest nicotine+ version from x86_64 Arch extra repo..."
+          X86_64_VERSION=$(curl -sL "${{ env.X86_64_MIRROR }}" | tar tzf - | grep -m1 '^nicotine+' | sed 's|^nicotine+-||;s|/.*||')
+          if [ -z "$X86_64_VERSION" ]; then
+            echo "::error::Failed to extract nicotine+ version from x86_64 Arch mirror."
             exit 1
           fi
 
-          PREV_RELEASE=$(cat .github/.current-release 2>/dev/null || echo "")
-          echo "Previous Release: $PREV_RELEASE"
-          echo "Current Release: $RELEASE_TAG"
+          echo "Fetching latest nicotine+ version from aarch64 Arch Linux ARM extra repo..."
+          AARCH64_VERSION=$(curl -sL "${{ env.AARCH64_MIRROR }}" | tar tzf - | grep -m1 '^nicotine+' | sed 's|^nicotine+-||;s|/.*||')
+          if [ -z "$AARCH64_VERSION" ]; then
+            echo "::error::Failed to extract nicotine+ version from aarch64 Arch Linux ARM mirror."
+            exit 1
+          fi
 
-          if [ "$RELEASE_TAG" != "$PREV_RELEASE" ]; then
-            echo "New release detected: $RELEASE_TAG"
-            echo "$RELEASE_TAG" > .github/.current-release
+          PREV_X86_64=$(cat .github/.current-release-x86_64 2>/dev/null || echo "")
+          PREV_AARCH64=$(cat .github/.current-release-aarch64 2>/dev/null || echo "")
 
-            git add .github/.current-release
+          echo "Previous x86_64 Release: $PREV_X86_64"
+          echo "Current x86_64 Release: $X86_64_VERSION"
+          echo "Previous aarch64 Release: $PREV_AARCH64"
+          echo "Current aarch64 Release: $AARCH64_VERSION"
+
+          if [ "$X86_64_VERSION" != "$PREV_X86_64" ]; then
+            echo "New x86_64 release detected: $X86_64_VERSION"
+            echo "$X86_64_VERSION" > .github/.current-release-x86_64
+            CHANGED=true
+          fi
+
+          if [ "$AARCH64_VERSION" != "$PREV_AARCH64" ]; then
+            echo "New aarch64 release detected: $AARCH64_VERSION"
+            echo "$AARCH64_VERSION" > .github/.current-release-aarch64
+            CHANGED=true
+          fi
+
+          if [ "$CHANGED" = true ]; then
+            git add .github/.current-release-x86_64 .github/.current-release-aarch64
 
             if git diff --cached --quiet; then
               echo "No changes to commit."
             else
-              git -c user.name="GitHub Actions" -c user.email="actions@github.com" commit -m "update version to $RELEASE_TAG"
+              git -c user.name="GitHub Actions" -c user.email="actions@github.com" \
+                commit -m "update versions to x86_64=$X86_64_VERSION aarch64=$AARCH64_VERSION"
               git push origin main || { echo '::error::Push failed'; exit 1; }
             fi
           else
-            echo "No new release detected."
+            echo "No new releases detected."
           fi
