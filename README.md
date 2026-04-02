@@ -39,6 +39,31 @@ This container is based on LinuxServer's [Docker Baseimage Selkies](https://gith
 | `NO_DECOR` | If set, the application will run without window borders for use as a PWA. |
 | `LC_ALL` | Set the language for the container IE `fr_FR.UTF-8`. |
 
+### Security Hardening
+
+This container ships with sensible security defaults enabled:
+
+| Variable | Default | Description |
+| :----: | :----: | --- |
+| `DISABLE_SUDO` | `true` | Removes sudo permissions — no runtime privilege escalation. |
+| `HARDEN_OPENBOX` | `true` | Disables close button, right-click/middle-click menus, and escape keybinds. Enables `RESTART_APP` automatically. |
+| `RESTART_APP` | `true` | Auto-restarts Nicotine+ if the window is closed, preventing users from reaching the bare desktop. |
+
+These can be overridden by setting the variable to `false` in your environment if needed.
+
+#### Additional hardening options
+
+| Variable | Description |
+| :----: | --- |
+| `HARDEN_DESKTOP` | Enables `DISABLE_OPEN_TOOLS`, `DISABLE_SUDO`, and `DISABLE_TERMINALS` together. Also hides file transfer and app launcher UI in Selkies. |
+| `DISABLE_TERMINALS` | Removes execute permissions from terminal emulators and hides them from the menu. |
+| `DISABLE_OPEN_TOOLS` | Disables `xdg-open` and `exo-open` to prevent launching arbitrary applications. |
+| `SELKIES_MASTER_TOKEN` | Enables token-based authentication instead of basic auth. See [Selkies docs](https://docs.linuxserver.io/images/docker-baseimage-selkies/#control-plane-api-for-token-management) for details. |
+| `SELKIES_FILE_TRANSFERS` | Set to `""` or `"none"` to disable file uploads/downloads through the web UI. Default is `"upload,download"`. |
+| `SELKIES_CLIPBOARD_ENABLED` | Set to `false` to disable clipboard sync between host and container. |
+
+> **Note:** The built-in basic auth (`PASSWORD`) is a convenience feature, not a robust security mechanism. For internet-facing deployments, place the container behind a reverse proxy with proper authentication (e.g. [SWAG](https://github.com/linuxserver/docker-swag)).
+
 #### Optional run configurations
 
 | Variable | Description |

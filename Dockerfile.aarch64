@@ -11,7 +11,10 @@ LABEL maintainer="fletchto99"
 
 ENV \
   TITLE="Nicotine+" \
-  LISTENING_PORT="2234"
+  LISTENING_PORT="2234" \
+  DISABLE_SUDO="true" \
+  HARDEN_OPENBOX="true" \
+  RESTART_APP="true"
 
 RUN \
   echo "**** install packages ****" && \
