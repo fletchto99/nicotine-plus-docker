@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'package_versions.txt'
 
 jobs:
   build:
@@ -150,3 +152,41 @@ jobs:
       - name: Inspect image
         run: |
           docker buildx imagetools inspect ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:latest
+
+  update-package-versions:
+    name: Update Package Versions
+    runs-on: ubuntu-latest
+    needs: merge
+    env:
+      GHCR_REGISTRY: ghcr.io
+      GHCR_IMAGE_NAME: ${{ github.repository }}
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract package versions from image
+        run: |
+          docker pull ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:latest
+          docker run --rm ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:latest pacman -Q --color never | sort > package_versions.txt
+
+      - name: Commit package versions
+        run: |
+          git add package_versions.txt
+          if ! git diff --cached --quiet; then
+            git -c user.name="GitHub Actions" -c user.email="actions@github.com" commit -m "update package_versions.txt"
+            git push origin main
+          else
+            echo "No package version changes to commit."
+          fi

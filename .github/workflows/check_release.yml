@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  GITHUB_API_URL: "https://api.github.com/repos/nicotine-plus/nicotine-plus/releases/latest"
+  ARCH_MIRROR: "https://mirror.rackspace.com/archlinux/extra/os/x86_64/extra.db"
 
 permissions:
   contents: write
@@ -25,17 +25,11 @@ jobs:
       - name: Check for Latest Upstream Release
         id: check-release
         run: |
-          echo "Fetching latest release from upstream..."
+          echo "Fetching latest nicotine+ version from Arch extra repo..."
 
-          RESPONSE="$(curl -s "${{ env.GITHUB_API_URL }}")"
-          if [ -z "$RESPONSE" ]; then
-            echo "::error::Empty response from GitHub API"
-            exit 1
-          fi
-
-          RELEASE_TAG=$(jq -r '.tag_name // empty' <<< "$RESPONSE")
+          RELEASE_TAG=$(curl -sL "${{ env.ARCH_MIRROR }}" | tar tzf - | awk -F '(-|/)' '/^nicotine[+]/ {print $2; exit}')
           if [ -z "$RELEASE_TAG" ]; then
-            echo "::error::Failed to extract tag_name from API response."
+            echo "::error::Failed to extract nicotine+ version from Arch mirror."
             exit 1
           fi
 
