@@ -27,7 +27,7 @@ jobs:
         run: |
           echo "Fetching latest nicotine+ version from Arch extra repo..."
 
-          RELEASE_TAG=$(curl -sL "${{ env.ARCH_MIRROR }}" | tar tzf - | awk -F '(-|/)' '/^nicotine[+]/ {print $2; exit}')
+          RELEASE_TAG=$(curl -sL "${{ env.ARCH_MIRROR }}" | tar tzf - | grep -m1 '^nicotine+' | sed 's|^nicotine+-||;s|/.*||')
           if [ -z "$RELEASE_TAG" ]; then
             echo "::error::Failed to extract nicotine+ version from Arch mirror."
             exit 1
