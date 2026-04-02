@@ -6,10 +6,11 @@ FROM ghcr.io/linuxserver/baseimage-selkies:arch
 ARG BUILD_DATE
 ARG VERSION
 ARG NICOTINE_VERSION
-LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
+LABEL build_version="version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="fletchto99"
 
 ENV \
+  LSIO_FIRST_PARTY="false" \
   TITLE="Nicotine+" \
   LISTENING_PORT="2234" \
   CUSTOM_PORT="6080" \
@@ -27,7 +28,7 @@ RUN \
     -o /usr/share/selkies/www/icon.png && \
   echo "**** cleanup ****" && \
   printf \
-    "Linuxserver.io version: ${VERSION}\nBuild-date: ${BUILD_DATE}" \
+    "version: ${VERSION}\nBuild-date: ${BUILD_DATE}" \
     > /build_version && \
   pacman -Scc --noconfirm && \
   rm -rf \
