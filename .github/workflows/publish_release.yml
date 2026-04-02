@@ -2,14 +2,24 @@ name: Publish Release
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 2"  # Rebuild weekly on Tuesdays to pick up base image and dependency updates
   push:
     branches:
       - main
 
 jobs:
-  build-and-push:
+  build:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            dockerfile: Dockerfile
+          - platform: linux/arm64
+            dockerfile: Dockerfile.aarch64
     env:
       GHCR_REGISTRY: ghcr.io
       GHCR_IMAGE_NAME: ${{ github.repository }}
@@ -19,7 +29,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Read Current Release Version
         id: get_version
@@ -32,6 +42,77 @@ jobs:
         uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
         with:
           driver: docker-container
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker image
+        id: build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          push: true
+          build-args: |
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+          outputs: type=image,name=${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Create Multi-Arch Manifest
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      GHCR_REGISTRY: ghcr.io
+      GHCR_IMAGE_NAME: ${{ github.repository }}
+      DOCKERHUB_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Read Current Release Version
+        id: get_version
+        run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
+
+      - name: Download digests
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
@@ -62,14 +143,20 @@ jobs:
             org.opencontainers.image.description=Multi-architecture container image
             org.opencontainers.image.vendor=${{ github.repository_owner }}
 
-      - name: Build and Push Docker image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          provenance: true
+      - name: Create manifest list and push (GHCR)
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map(select(startswith("${{ env.GHCR_REGISTRY }}")) | "-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@sha256:%s ' *)
+
+      - name: Create manifest list and push (Docker Hub)
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map(select(startswith("${{ env.GHCR_REGISTRY }}") | not) | "-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:latest
