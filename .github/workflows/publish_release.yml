@@ -3,7 +3,7 @@ name: Publish Release
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * 2"  # Rebuild weekly on Tuesdays to pick up package updates
+    - cron: "0 6 * * 2"  # Rebuild weekly on Tuesdays to pick up base image and dependency updates
   push:
     branches:
       - main
@@ -18,10 +18,8 @@ jobs:
         include:
           - platform: linux/amd64
             dockerfile: Dockerfile
-            tag_suffix: ""
           - platform: linux/arm64
             dockerfile: Dockerfile.aarch64
-            tag_suffix: "-arm64"
     env:
       GHCR_REGISTRY: ghcr.io
       GHCR_IMAGE_NAME: ${{ github.repository }}
@@ -31,7 +29,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Read Current Release Version
         id: get_version
@@ -80,7 +78,7 @@ jobs:
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           path: /tmp/digests/*
@@ -100,14 +98,14 @@ jobs:
       packages: write
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Read Current Release Version
         id: get_version
         run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
 
       - name: Download digests
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: /tmp/digests
           pattern: digests-*
@@ -149,7 +147,14 @@ jobs:
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(jq -cr '.tags | map(select(startswith("${{ env.GHCR_REGISTRY }}")) | "-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@sha256:%s ' *)
+
+      - name: Create manifest list and push (Docker Hub)
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map(select(startswith("${{ env.GHCR_REGISTRY }}") | not) | "-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@sha256:%s ' *)
 
       - name: Inspect image
