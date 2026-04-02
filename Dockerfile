@@ -20,7 +20,7 @@ ENV \
 RUN \
   echo "**** install packages ****" && \
   pacman -Sy --noconfirm \
-    "nicotine+${VERSION:+=$VERSION}" && \
+    "nicotine+" && \
   echo "**** add icon ****" && \
   rsvg-convert -w 256 -h 256 \
     /usr/share/icons/hicolor/scalable/apps/org.nicotine_plus.Nicotine.svg \
