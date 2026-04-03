@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM ghcr.io/linuxserver/baseimage-selkies:arch
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 # set version label
 ARG BUILD_DATE

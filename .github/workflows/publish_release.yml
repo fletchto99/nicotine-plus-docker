@@ -22,10 +22,10 @@ jobs:
       matrix:
         include:
           - platform: linux/amd64
-            dockerfile: Dockerfile
+            base_image: ghcr.io/linuxserver/baseimage-selkies:arch
             version_file: .github/.current-release-x86_64
           - platform: linux/arm64
-            dockerfile: Dockerfile.aarch64
+            base_image: ghcr.io/linuxserver/baseimage-selkies:arm64v8-arch
             version_file: .github/.current-release-aarch64
     permissions:
       contents: read
@@ -64,10 +64,11 @@ jobs:
         uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
           build-args: |
+            BASE_IMAGE=${{ matrix.base_image }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
             BUILD_DATE=${{ github.event.repository.updated_at }}
           outputs: type=image,name=${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true

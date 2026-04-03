@@ -172,6 +172,7 @@ cd nicotine-plus-docker
 docker build \
   --no-cache \
   --pull \
+  --build-arg BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:arch \
   -t ghcr.io/fletchto99/nicotine-plus-docker:latest .
 ```
 
