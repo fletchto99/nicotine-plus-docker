@@ -19,6 +19,73 @@ The application can be accessed at:
 * `http://yourhost:6080/`
 * `https://yourhost:6081/`
 
+## Usage
+
+Here are some example snippets to help you get started creating a container.
+
+### docker-compose (recommended)
+
+```yaml
+---
+services:
+  nicotine-plus:
+    image: ghcr.io/fletchto99/nicotine-plus-docker:latest
+    container_name: nicotine-plus
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - /path/to/data:/config
+      - /path/to/downloads:/data/downloads
+      - /path/to/incomplete:/data/incomplete_downloads
+    ports:
+      - 6080:6080
+      - 6081:6081
+      - 2234-2239:2234-2239
+    shm_size: "1gb"
+    restart: unless-stopped
+```
+
+### docker cli
+
+```bash
+docker run -d \
+  --name=nicotine-plus \
+  -e PUID=1000 \
+  -e PGID=1000 \
+  -p 6080:6080 \
+  -p 6081:6081 \
+  -p 2234-2239:2234-2239 \
+  -v /path/to/data:/config \
+  -v /path/to/downloads:/data/downloads \
+  -v /path/to/incomplete:/data/incomplete_downloads \
+  --shm-size="1gb" \
+  --restart unless-stopped \
+  ghcr.io/fletchto99/nicotine-plus-docker:latest
+```
+
+## Parameters
+
+Container images are configured using parameters passed at runtime (such as those above). These parameters are separated by a colon and indicate `<external>:<internal>` respectively. For example, `-p 3001:3001` would expose port `3001` from inside the container to be accessible from the host's IP on port `3001` outside the container.
+
+| Parameter | Function |
+| :----: | --- |
+| `-p 6080` | Nicotine+ desktop gui (HTTP). |
+| `-p 6081` | Nicotine+ desktop gui (HTTPS). |
+| `-p 2234-2239` | Nicotine+ P2P ports. |
+| `-e PUID=1000` | for UserID - see below for explanation. |
+| `-e PGID=1000` | for GroupID - see below for explanation. |
+| `-v /config` | Where Nicotine+ should store configuration and queue data. |
+| `-v /data/downloads` | Where Nicotine+ should store complete downloads. |
+| `-v /data/incomplete_downloads` | Where Nicotine+ should store data during the download process. |
+| `--shm-size=1gb` | Recommended for stability. |
+
+### Optional run configurations
+
+| Variable | Description |
+| :----: | --- |
+| `--device /dev/dri:/dev/dri` | Mount a GPU into the container for hardware acceleration. Only **Open Source** drivers are supported (Intel, AMDGPU, Radeon, ATI, Nouveau). |
+
 ### Options in all Selkies-based GUI containers
 
 This container is based on LinuxServer's [Docker Baseimage Selkies](https://github.com/linuxserver/docker-baseimage-selkies) which means there are additional environment variables and run configurations to enable or disable specific functionality.
@@ -27,7 +94,6 @@ This container is based on LinuxServer's [Docker Baseimage Selkies](https://gith
 
 | Variable | Description |
 | :----: | --- |
-| `LISTENING_PORT` | Listening port allows other peers on the network to connect to your client and share files. Default is `2234`. |
 | `NICOTINE_CLI` | Additional CLI flags to pass to Nicotine+. |
 | `CUSTOM_PORT` | Internal port the container listens on for HTTP if it needs to be swapped from the default `6080`. |
 | `CUSTOM_HTTPS_PORT` | Internal port the container listens on for HTTPS if it needs to be swapped from the default `6081`. |
@@ -35,8 +101,6 @@ This container is based on LinuxServer's [Docker Baseimage Selkies](https://gith
 | `PASSWORD` | HTTP Basic auth password, `abc` is default. If unset there will be no auth. |
 | `SUBFOLDER` | Subfolder for the application if running a subfolder reverse proxy, need both slashes IE `/subfolder/`. |
 | `TITLE` | The page title displayed on the web browser, default `Nicotine+`. |
-| `FILE_MANAGER_PATH` | Modifies the default upload/download file path, must have proper permissions for `abc` user. |
-| `NO_DECOR` | If set, the application will run without window borders for use as a PWA. |
 | `LC_ALL` | Set the language for the container IE `fr_FR.UTF-8`. |
 
 ### Security Hardening
@@ -58,87 +122,6 @@ These can be overridden by setting the variable to `false` in your environment i
 | `SELKIES_CLIPBOARD_ENABLED` | Set to `false` to disable clipboard sync between host and container. |
 
 > **Note:** The built-in basic auth (`PASSWORD`) is a convenience feature, not a robust security mechanism. For internet-facing deployments, place the container behind a reverse proxy with proper authentication (e.g. [SWAG](https://github.com/linuxserver/docker-swag)).
-
-#### Optional run configurations
-
-| Variable | Description |
-| :----: | --- |
-| `--device /dev/dri:/dev/dri` | Mount a GPU into the container for hardware acceleration. Only **Open Source** drivers are supported (Intel, AMDGPU, Radeon, ATI, Nouveau). |
-| `--shm-size=1gb` | Recommended for stability. Sets the shared memory size available to the container. |
-
-## Usage
-
-Here are some example snippets to help you get started creating a container.
-
-### docker-compose (recommended)
-
-```yaml
----
-services:
-  nicotine-plus:
-    image: ghcr.io/fletchto99/nicotine-plus-docker:latest
-    container_name: nicotine-plus
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-      - PASSWORD= #optional
-      - LISTENING_PORT=2234 #optional
-    volumes:
-      - /path/to/data:/config
-      - /path/to/downloads:/data/downloads
-      - /path/to/incomplete:/data/incomplete_downloads
-      - /path/to/shared:/data/shared #optional
-    ports:
-      - 6080:6080
-      - 6081:6081
-      - 2234-2239:2234-2239
-    shm_size: "1gb"
-    restart: unless-stopped
-```
-
-### docker cli
-
-```bash
-docker run -d \
-  --name=nicotine-plus \
-  -e PUID=1000 \
-  -e PGID=1000 \
-  -e TZ=Etc/UTC \
-  -e PASSWORD= `#optional` \
-  -e LISTENING_PORT=2234 `#optional` \
-  -p 6080:6080 \
-  -p 6081:6081 \
-  -p 2234-2239:2234-2239 \
-  -v /path/to/data:/config \
-  -v /path/to/downloads:/data/downloads \
-  -v /path/to/incomplete:/data/incomplete_downloads \
-  -v /path/to/shared:/data/shared `#optional` \
-  --shm-size="1gb" \
-  --restart unless-stopped \
-  ghcr.io/fletchto99/nicotine-plus-docker:latest
-```
-
-## Parameters
-
-Container images are configured using parameters passed at runtime (such as those above). These parameters are separated by a colon and indicate `<external>:<internal>` respectively. For example, `-p 3001:3001` would expose port `3001` from inside the container to be accessible from the host's IP on port `3001` outside the container.
-
-| Parameter | Function |
-| :----: | --- |
-| `-p 6080` | Nicotine+ desktop gui (HTTP). |
-| `-p 6081` | Nicotine+ desktop gui (HTTPS). |
-| `-p 2234-2239` | Nicotine+ P2P ports. |
-| `-e PUID=1000` | for UserID - see below for explanation. |
-| `-e PGID=1000` | for GroupID - see below for explanation. |
-| `-e TZ=Etc/UTC` | specify a timezone to use, see this [list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List). |
-| `-e PASSWORD=` | Optionally set a password for the gui. |
-| `-e LISTENING_PORT=2234` | Set the P2P listening port (default 2234). |
-| `-e NICOTINE_CLI=` | Pass additional CLI flags to Nicotine+. |
-| `-v /config` | Where Nicotine+ should store configuration and queue data. |
-| `-v /data/downloads` | Where Nicotine+ should store complete downloads. |
-| `-v /data/incomplete_downloads` | Where Nicotine+ should store data during the download process. |
-| `-v /data/shared` | A location for you to share data (files/folders) on Nicotine+. |
-| `--shm-size=1gb` | Recommended for stability. |
 
 ## Environment variables from files (Docker secrets)
 

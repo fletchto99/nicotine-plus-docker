@@ -15,7 +15,8 @@ ENV \
   CUSTOM_PORT="6080" \
   CUSTOM_HTTPS_PORT="6081" \
   HARDEN_DESKTOP="true" \
-  HARDEN_OPENBOX="true"
+  HARDEN_OPENBOX="true" \
+  NO_GAMEPAD="true"
 
 RUN \
   echo "**** install packages ****" && \
