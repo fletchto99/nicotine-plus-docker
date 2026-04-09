@@ -1,0 +1,60 @@
+name: Build Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+env:
+  GHCR_REGISTRY: ghcr.io
+
+jobs:
+  build:
+    name: Build Docker Image (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            base_image: ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
+          - platform: linux/arm64
+            base_image: ghcr.io/linuxserver/baseimage-selkies:arm64v8-ubuntunoble
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read Current Release Version
+        id: get_version
+        run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+        with:
+          driver: docker-container
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        with:
+          context: .
+          file: Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: false
+          build-args: |
+            BASE_IMAGE=${{ matrix.base_image }}
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+          cache-from: type=gha,scope=${{ matrix.platform }}

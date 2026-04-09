@@ -13,6 +13,10 @@ env:
   GHCR_IMAGE_NAME: ${{ github.repository }}
   DOCKERHUB_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}
 
+concurrency:
+  group: publish-release
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build and Push Docker Image
@@ -22,11 +26,9 @@ jobs:
       matrix:
         include:
           - platform: linux/amd64
-            base_image: ghcr.io/linuxserver/baseimage-selkies:arch
-            version_file: .github/.current-release-x86_64
+            base_image: ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
           - platform: linux/arm64
-            base_image: ghcr.io/linuxserver/baseimage-selkies:arm64v8-arch
-            version_file: .github/.current-release-aarch64
+            base_image: ghcr.io/linuxserver/baseimage-selkies:arm64v8-ubuntunoble
     permissions:
       contents: read
       packages: write
@@ -36,7 +38,7 @@ jobs:
 
       - name: Read Current Release Version
         id: get_version
-        run: echo "VERSION=$(cat ${{ matrix.version_file }})" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
@@ -102,7 +104,7 @@ jobs:
 
       - name: Read Current Release Version
         id: get_version
-        run: echo "VERSION=$(cat .github/.current-release-x86_64)" >> "$GITHUB_OUTPUT"
+        run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
 
       - name: Download digests
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1

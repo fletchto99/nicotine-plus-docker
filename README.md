@@ -172,11 +172,12 @@ cd nicotine-plus-docker
 docker build \
   --no-cache \
   --pull \
-  --build-arg BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:arch \
+  --build-arg BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble \
   -t ghcr.io/fletchto99/nicotine-plus-docker:latest .
 ```
 
 ## Versions
 
+* **09.04.26:** - Migrated to Ubuntu Noble base (from Arch Linux). Nicotine+ installed from official PPA.
 * **02.04.26:** - Migrated to baseimage-selkies (from baseimage-kasmvnc). Arch Linux base with Wayland support.
 * **19.07.23:** - Initial release.
