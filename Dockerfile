@@ -21,8 +21,11 @@ ENV \
 
 RUN \
   echo "**** install packages ****" && \
-  pacman -Sy --noconfirm \
-    "nicotine+${VERSION:+=$VERSION}" && \
+  add-apt-repository -y ppa:nicotine-team/stable && \
+  apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    nicotine \
+    librsvg2-bin && \
   echo "**** add icon ****" && \
   rsvg-convert -w 256 -h 256 \
     /usr/share/icons/hicolor/scalable/apps/org.nicotine_plus.Nicotine.svg \
@@ -31,11 +34,10 @@ RUN \
   printf \
     "version: ${VERSION}\nBuild-date: ${BUILD_DATE}" \
     > /build_version && \
-  pacman -Scc --noconfirm && \
+  apt-get autoclean && \
   rm -rf \
     /tmp/* \
-    /var/cache/pacman/pkg/* \
-    /var/lib/pacman/sync/*
+    /var/lib/apt/lists/*
 
 # add local files
 COPY root/ /
