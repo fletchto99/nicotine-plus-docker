@@ -13,6 +13,10 @@ env:
   GHCR_IMAGE_NAME: ${{ github.repository }}
   DOCKERHUB_IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}
 
+concurrency:
+  group: publish-release
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build and Push Docker Image

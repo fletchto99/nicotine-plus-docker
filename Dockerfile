@@ -20,12 +20,16 @@ ENV \
   NO_GAMEPAD="true"
 
 RUN \
-  echo "**** install packages ****" && \
-  add-apt-repository -y ppa:nicotine-team/stable && \
+  echo "**** install nicotine+ ****" && \
   apt-get update && \
   DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-    nicotine \
-    librsvg2-bin && \
+    librsvg2-bin \
+    unzip && \
+  curl -o /tmp/debian-package.zip -L \
+    "https://github.com/nicotine-plus/nicotine-plus/releases/download/${VERSION}/debian-package.zip" && \
+  unzip /tmp/debian-package.zip -d /tmp/nicotine && \
+  DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    /tmp/nicotine/*.deb && \
   echo "**** add icon ****" && \
   rsvg-convert -w 256 -h 256 \
     /usr/share/icons/hicolor/scalable/apps/org.nicotine_plus.Nicotine.svg \
@@ -34,6 +38,8 @@ RUN \
   printf \
     "version: ${VERSION}\nBuild-date: ${BUILD_DATE}" \
     > /build_version && \
+  apt-get purge -y --autoremove \
+    unzip && \
   apt-get autoclean && \
   rm -rf \
     /tmp/* \
