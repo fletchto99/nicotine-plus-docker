@@ -18,8 +18,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  smoke-test:
+    uses: ./.github/workflows/smoke_test.yml
+
   build:
     name: Build and Push Docker Image
+    needs: smoke-test
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
