@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG BASE_IMAGE
+ARG BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
 FROM ${BASE_IMAGE}
 
 # set version label
@@ -51,3 +51,7 @@ COPY root/ /
 # ports and volumes
 VOLUME /config
 EXPOSE 6080 6081
+
+# healthcheck via the Selkies web UI
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
+  CMD curl -f http://localhost:6080/ || exit 1

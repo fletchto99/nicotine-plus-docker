@@ -1,0 +1,121 @@
+name: Smoke Test
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_call:
+
+env:
+  GHCR_REGISTRY: ghcr.io
+  TEST_IMAGE: nicotine-plus-smoke-test
+
+jobs:
+  smoke-test:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Read Current Release Version
+        id: get_version
+        run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image for testing
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: ${{ env.TEST_IMAGE }}:latest
+          build-args: |
+            BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
+            VERSION=${{ steps.get_version.outputs.VERSION }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+          cache-from: type=gha,scope=linux/amd64
+
+      - name: Start container
+        run: |
+          docker run -d \
+            --name smoke-test \
+            -e PUID=1000 \
+            -e PGID=1000 \
+            -p 6080:6080 \
+            -p 6081:6081 \
+            --shm-size=1gb \
+            ${{ env.TEST_IMAGE }}:latest
+
+      - name: Wait for Selkies web UI
+        run: |
+          echo "Waiting for Selkies web UI to become ready..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:6080/ > /dev/null 2>&1; then
+              echo "Web UI is ready after ~${i}s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Web UI did not become ready within 120s"
+          docker logs smoke-test
+          exit 1
+
+      - name: Verify Nicotine+ process is running
+        run: |
+          if docker exec smoke-test pgrep -f nicotine > /dev/null 2>&1; then
+            echo "Nicotine+ process is running"
+          else
+            echo "::error::Nicotine+ process is not running"
+            docker logs smoke-test
+            exit 1
+          fi
+
+      - name: Verify Nicotine+ GUI window loaded
+        run: |
+          echo "Installing xdotool for window detection..."
+          docker exec smoke-test bash -c "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xdotool" > /dev/null 2>&1
+
+          # Auto-detect DISPLAY from the nicotine process environment
+          NICOTINE_PID=$(docker exec smoke-test pgrep -f nicotine | head -1)
+          DISPLAY_VAR=$(docker exec smoke-test bash -c "cat /proc/${NICOTINE_PID}/environ 2>/dev/null | tr '\0' '\n' | grep ^DISPLAY= | head -1")
+          echo "Nicotine+ PID: ${NICOTINE_PID}, ${DISPLAY_VAR}"
+
+          echo "Waiting for Nicotine+ window to appear..."
+          for i in $(seq 1 30); do
+            WINDOWS=$(docker exec smoke-test bash -c "${DISPLAY_VAR} xdotool search --name 'Nicotine' 2>/dev/null" || true)
+            if [ -n "$WINDOWS" ]; then
+              echo "Nicotine+ GUI window detected after ~$((i * 2))s (window IDs: $WINDOWS)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::Nicotine+ GUI window did not appear within 60s"
+          docker logs smoke-test
+          exit 1
+
+      - name: Verify healthcheck status
+        run: |
+          STATUS=$(docker inspect --format='{{.State.Health.Status}}' smoke-test)
+          echo "Docker healthcheck status: $STATUS"
+          if [ "$STATUS" != "healthy" ]; then
+            echo "::warning::Container healthcheck status is '$STATUS' (may still be in start period)"
+          fi
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker logs smoke-test
