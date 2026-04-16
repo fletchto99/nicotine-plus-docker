@@ -161,17 +161,11 @@ jobs:
       - name: Tag per-platform images (GHCR)
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
-          ANNOTATIONS=(
-            --annotation "org.opencontainers.image.title=${{ github.event.repository.name }}"
-            --annotation "org.opencontainers.image.description=${{ github.event.repository.description }}"
-            --annotation "org.opencontainers.image.source=https://github.com/${{ github.repository }}"
-            --annotation "org.opencontainers.image.vendor=${{ github.repository_owner }}"
-          )
-          docker buildx imagetools create --prefer-index=false "${ANNOTATIONS[@]}" \
+          docker buildx imagetools create --prefer-index=false \
             -t ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:amd64-${VERSION} \
             -t ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:amd64-latest \
             ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.amd64 }}
-          docker buildx imagetools create --prefer-index=false "${ANNOTATIONS[@]}" \
+          docker buildx imagetools create --prefer-index=false \
             -t ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:arm64-${VERSION} \
             -t ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:arm64-latest \
             ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.arm64 }}
@@ -179,17 +173,11 @@ jobs:
       - name: Tag per-platform images (Docker Hub)
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
-          ANNOTATIONS=(
-            --annotation "org.opencontainers.image.title=${{ github.event.repository.name }}"
-            --annotation "org.opencontainers.image.description=${{ github.event.repository.description }}"
-            --annotation "org.opencontainers.image.source=https://github.com/${{ github.repository }}"
-            --annotation "org.opencontainers.image.vendor=${{ github.repository_owner }}"
-          )
-          docker buildx imagetools create --prefer-index=false "${ANNOTATIONS[@]}" \
+          docker buildx imagetools create --prefer-index=false \
             -t ${{ env.DOCKERHUB_IMAGE_NAME }}:amd64-${VERSION} \
             -t ${{ env.DOCKERHUB_IMAGE_NAME }}:amd64-latest \
             ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.amd64 }}
-          docker buildx imagetools create --prefer-index=false "${ANNOTATIONS[@]}" \
+          docker buildx imagetools create --prefer-index=false \
             -t ${{ env.DOCKERHUB_IMAGE_NAME }}:arm64-${VERSION} \
             -t ${{ env.DOCKERHUB_IMAGE_NAME }}:arm64-latest \
             ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.arm64 }}
