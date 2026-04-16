@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 env:
   GHCR_REGISTRY: ghcr.io
   GHCR_IMAGE_NAME: ${{ github.repository }}
