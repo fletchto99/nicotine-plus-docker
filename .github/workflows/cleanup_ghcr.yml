@@ -16,4 +16,5 @@ jobs:
         with:
           delete-untagged: true
           delete-orphaned-images: true
+          keep-n-tagged: 20
           token: ${{ secrets.GITHUB_TOKEN }}
