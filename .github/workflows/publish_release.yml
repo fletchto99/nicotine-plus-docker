@@ -30,8 +30,10 @@ jobs:
       matrix:
         include:
           - platform: linux/amd64
+            arch: amd64
             base_image: ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
           - platform: linux/arm64
+            arch: arm64
             base_image: ghcr.io/linuxserver/baseimage-selkies:arm64v8-ubuntunoble
     permissions:
       contents: read
@@ -49,8 +51,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
-        with:
-          driver: docker-container
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
@@ -59,18 +59,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
       - name: Build and Push Docker image
         id: build
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
           context: .
-          file: Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
           build-args: |
@@ -90,7 +83,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          name: digest-${{ matrix.arch }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -116,8 +109,8 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: /tmp/digests
-          pattern: digests-*
-          merge-multiple: true
+          pattern: digest-*
+          merge-multiple: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
@@ -145,24 +138,60 @@ jobs:
           tags: |
             type=raw,value=${{ steps.get_version.outputs.VERSION }}
             type=raw,value=latest,enable={{is_default_branch}}
-          labels: |
-            org.opencontainers.image.title=${{ github.repository }}
-            org.opencontainers.image.description=Multi-architecture container image
-            org.opencontainers.image.vendor=${{ github.repository_owner }}
+
+      - name: Resolve digests
+        id: digests
+        run: |
+          AMD64_DIGEST="sha256:$(ls /tmp/digests/digest-amd64/)"
+          ARM64_DIGEST="sha256:$(ls /tmp/digests/digest-arm64/)"
+          echo "amd64=$AMD64_DIGEST" >> "$GITHUB_OUTPUT"
+          echo "arm64=$ARM64_DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Tag per-platform images (GHCR)
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          docker buildx imagetools create --prefer-index=false \
+            -t ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:amd64-${VERSION} \
+            -t ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:amd64-latest \
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.amd64 }}
+          docker buildx imagetools create --prefer-index=false \
+            -t ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:arm64-${VERSION} \
+            -t ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:arm64-latest \
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.arm64 }}
+
+      - name: Tag per-platform images (Docker Hub)
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          docker buildx imagetools create --prefer-index=false \
+            -t ${{ env.DOCKERHUB_IMAGE_NAME }}:amd64-${VERSION} \
+            -t ${{ env.DOCKERHUB_IMAGE_NAME }}:amd64-latest \
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.amd64 }}
+          docker buildx imagetools create --prefer-index=false \
+            -t ${{ env.DOCKERHUB_IMAGE_NAME }}:arm64-${VERSION} \
+            -t ${{ env.DOCKERHUB_IMAGE_NAME }}:arm64-latest \
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.arm64 }}
 
       - name: Create manifest list and push (GHCR)
-        working-directory: /tmp/digests
         run: |
           docker buildx imagetools create \
             $(jq -cr '.tags | map(select(startswith("${{ env.GHCR_REGISTRY }}")) | "-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@sha256:%s ' *)
+            --annotation "index:org.opencontainers.image.title=${{ github.event.repository.name }}" \
+            --annotation "index:org.opencontainers.image.description=${{ github.event.repository.description }}" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --annotation "index:org.opencontainers.image.vendor=${{ github.repository_owner }}" \
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.amd64 }} \
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.arm64 }}
 
       - name: Create manifest list and push (Docker Hub)
-        working-directory: /tmp/digests
         run: |
           docker buildx imagetools create \
             $(jq -cr '.tags | map(select(startswith("${{ env.GHCR_REGISTRY }}") | not) | "-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@sha256:%s ' *)
+            --annotation "index:org.opencontainers.image.title=${{ github.event.repository.name }}" \
+            --annotation "index:org.opencontainers.image.description=${{ github.event.repository.description }}" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --annotation "index:org.opencontainers.image.vendor=${{ github.repository_owner }}" \
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.amd64 }} \
+            ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}@${{ steps.digests.outputs.arm64 }}
 
       - name: Inspect image and extract digest
         id: inspect
