@@ -79,7 +79,7 @@ jobs:
       - name: Verify Nicotine+ GUI window loaded
         run: |
           echo "Installing xdotool for window detection..."
-          docker exec smoke-test bash -c "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xdotool" > /dev/null 2>&1
+          docker exec smoke-test bash -c "apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xdotool" > /dev/null
 
           # Auto-detect DISPLAY from the nicotine process environment
           NICOTINE_PID=$(docker exec smoke-test pgrep -f nicotine | head -1)
