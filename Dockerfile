@@ -19,8 +19,6 @@ ENV \
   HARDEN_OPENBOX="true" \
   NO_GAMEPAD="true"
 
-COPY icon.png /usr/share/selkies/www/icon.png
-
 RUN \
   echo "**** install nicotine+ ****" && \
   apt-get update && \
