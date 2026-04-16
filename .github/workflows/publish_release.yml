@@ -162,10 +162,10 @@ jobs:
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
           ANNOTATIONS=(
-            --annotation "manifest:org.opencontainers.image.title=${{ github.event.repository.name }}"
-            --annotation "manifest:org.opencontainers.image.description=${{ github.event.repository.description }}"
-            --annotation "manifest:org.opencontainers.image.source=https://github.com/${{ github.repository }}"
-            --annotation "manifest:org.opencontainers.image.vendor=${{ github.repository_owner }}"
+            --annotation "org.opencontainers.image.title=${{ github.event.repository.name }}"
+            --annotation "org.opencontainers.image.description=${{ github.event.repository.description }}"
+            --annotation "org.opencontainers.image.source=https://github.com/${{ github.repository }}"
+            --annotation "org.opencontainers.image.vendor=${{ github.repository_owner }}"
           )
           docker buildx imagetools create --prefer-index=false "${ANNOTATIONS[@]}" \
             -t ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}:amd64-${VERSION} \
@@ -180,10 +180,10 @@ jobs:
         run: |
           VERSION="${{ steps.get_version.outputs.VERSION }}"
           ANNOTATIONS=(
-            --annotation "manifest:org.opencontainers.image.title=${{ github.event.repository.name }}"
-            --annotation "manifest:org.opencontainers.image.description=${{ github.event.repository.description }}"
-            --annotation "manifest:org.opencontainers.image.source=https://github.com/${{ github.repository }}"
-            --annotation "manifest:org.opencontainers.image.vendor=${{ github.repository_owner }}"
+            --annotation "org.opencontainers.image.title=${{ github.event.repository.name }}"
+            --annotation "org.opencontainers.image.description=${{ github.event.repository.description }}"
+            --annotation "org.opencontainers.image.source=https://github.com/${{ github.repository }}"
+            --annotation "org.opencontainers.image.vendor=${{ github.repository_owner }}"
           )
           docker buildx imagetools create --prefer-index=false "${ANNOTATIONS[@]}" \
             -t ${{ env.DOCKERHUB_IMAGE_NAME }}:amd64-${VERSION} \
