@@ -12,7 +12,7 @@ jobs:
       packages: write
     steps:
       - name: Delete orphaned images
-        uses: dataaxiom/ghcr-cleanup-action@v1
+        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1
         with:
           delete-orphaned-images: true
           token: ${{ secrets.GITHUB_TOKEN }}
