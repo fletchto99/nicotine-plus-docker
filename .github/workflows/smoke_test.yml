@@ -96,6 +96,13 @@ jobs:
           docker logs smoke-test
           exit 1
 
+      - name: Verify Selkies web UI loads in browser
+        run: |
+          cd .github/scripts
+          npm ci --ignore-scripts > /dev/null 2>&1
+          npx playwright install chromium --with-deps > /dev/null 2>&1
+          node verify-selkies-ui.js
+
       - name: Verify healthcheck status
         run: |
           STATUS=$(docker inspect --format='{{.State.Health.Status}}' smoke-test)
