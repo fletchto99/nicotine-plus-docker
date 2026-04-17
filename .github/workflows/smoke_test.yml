@@ -36,7 +36,6 @@ jobs:
           load: true
           tags: ${{ env.TEST_IMAGE }}:latest
           build-args: |
-            BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
             VERSION=${{ steps.get_version.outputs.VERSION }}
             BUILD_DATE=${{ github.event.repository.updated_at }}
           cache-from: type=gha,scope=linux/amd64
