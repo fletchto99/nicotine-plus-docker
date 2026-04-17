@@ -31,19 +31,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: linux/amd64
-            arch: amd64
-            base_image: ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
-          - platform: linux/arm64
-            arch: arm64
-            base_image: ghcr.io/linuxserver/baseimage-selkies:arm64v8-ubuntunoble
+        arch: [amd64, arm64]
     permissions:
       contents: read
       packages: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set platform variables
+        id: platform
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            echo "docker_platform=linux/arm64" >> "$GITHUB_OUTPUT"
+            echo "base_image=ghcr.io/linuxserver/baseimage-selkies:arm64v8-ubuntunoble" >> "$GITHUB_OUTPUT"
+          else
+            echo "docker_platform=linux/amd64" >> "$GITHUB_OUTPUT"
+            echo "base_image=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Read Current Release Version
         id: get_version
@@ -67,15 +72,15 @@ jobs:
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
           context: .
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ steps.platform.outputs.docker_platform }}
           push: true
           build-args: |
-            BASE_IMAGE=${{ matrix.base_image }}
+            BASE_IMAGE=${{ steps.platform.outputs.base_image }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
             BUILD_DATE=${{ github.event.repository.updated_at }}
           outputs: type=image,name=${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=${{ matrix.platform }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
 
       - name: Export digest
         run: |
