@@ -16,8 +16,10 @@
 
 The application can be accessed at:
 
-* `http://yourhost:6080/`
-* `https://yourhost:6081/`
+* `https://yourhost:6081/` (recommended)
+* `http://localhost:6080/` (only works from the same machine)
+
+> **⚠️ Breaking Change (Selkies migration):** The underlying [Selkies](https://github.com/selkies-project/selkies) web client now uses the WebCodecs API for video decoding, which requires a [Secure Context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts). This means **plain HTTP access only works via `localhost`**. For remote access, you must use HTTPS on port `6081` or place the container behind a reverse proxy with HTTPS termination (e.g. [SWAG](https://github.com/linuxserver/docker-swag)). A self-signed certificate is automatically generated on first run.
 
 ## Usage
 
@@ -70,8 +72,8 @@ Container images are configured using parameters passed at runtime (such as thos
 
 | Parameter | Function |
 | :----: | --- |
-| `-p 6080` | Nicotine+ desktop gui (HTTP). |
-| `-p 6081` | Nicotine+ desktop gui (HTTPS). |
+| `-p 6080` | Nicotine+ desktop gui (HTTP, localhost only). |
+| `-p 6081` | Nicotine+ desktop gui (HTTPS, recommended for remote access). |
 | `-p 2234-2239` | Nicotine+ P2P ports. |
 | `-e PUID=1000` | for UserID - see below for explanation. |
 | `-e PGID=1000` | for GroupID - see below for explanation. |
@@ -179,5 +181,5 @@ docker build \
 ## Versions
 
 * **09.04.26:** - Migrated to Ubuntu Noble base (from Arch Linux). Nicotine+ installed from official PPA.
-* **02.04.26:** - Migrated to baseimage-selkies (from baseimage-kasmvnc). Arch Linux base with Wayland support.
+* **02.04.26:** - Migrated to baseimage-selkies (from baseimage-kasmvnc). Arch Linux base with Wayland support. **Breaking:** Remote HTTP access no longer works; use HTTPS (`:6081`) or a reverse proxy instead (see [Application Setup](#application-setup)).
 * **19.07.23:** - Initial release.
