@@ -55,6 +55,7 @@ jobs:
         run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
+        if: matrix.arch == 'arm64'
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
 
       - name: Set up Docker Buildx
