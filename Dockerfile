@@ -37,6 +37,7 @@ RUN \
     "https://github.com/nicotine-plus/nicotine-plus/releases/download/${VERSION}/debian-package.zip" && \
   python3 -m zipfile -e /tmp/debian-package.zip /tmp/nicotine && \
   DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    librsvg2-common \
     /tmp/nicotine/*.deb && \
   echo "**** cleanup ****" && \
   printf \
