@@ -57,13 +57,6 @@ jobs:
           commit-message: "Update Nicotine+ to ${{ steps.check-release.outputs.version }}"
           title: "Update Nicotine+ to ${{ steps.check-release.outputs.version }}"
           body: |
-            Updates `.github/.current-release` to the latest upstream Nicotine+ release.
+            Updates Nicotine+ to ${{ steps.check-release.outputs.version }}.
 
             Release notes: https://github.com/nicotine-plus/nicotine-plus/releases/tag/${{ steps.check-release.outputs.version }}
-
-            **Required checks:** This PR uses `GITHUB_TOKEN`, so pull request
-            workflows require approval. Select **Approve workflows to run** in
-            the PR merge box to start the build and smoke-test checks. Approve
-            new runs after automated updates as needed.
-
-            Merging this PR triggers the existing Publish Release workflow.
