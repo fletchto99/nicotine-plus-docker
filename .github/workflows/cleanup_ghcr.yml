@@ -34,7 +34,7 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1
         with:
           exclude-tags: preview-*
-          delete-untagged: true
+          delete-untagged: false
           delete-orphaned-images: true
           keep-n-tagged: 20
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
@@ -48,6 +48,14 @@ jobs:
           exclude-tags: ^(?!preview-).+
           delete-untagged: false
           keep-n-tagged: 20
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete untagged images older than 24 hours
+        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1
+        with:
+          delete-untagged: true
+          older-than: 24 hours
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
