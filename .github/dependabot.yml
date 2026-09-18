@@ -11,6 +11,6 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "npm"
-    directory: "/.github/scripts"
+    directory: "/scripts"
     schedule:
       interval: "weekly"
