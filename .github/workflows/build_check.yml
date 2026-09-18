@@ -38,9 +38,11 @@ jobs:
             echo "base_image=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Read Current Release Version
+      - name: Read build metadata
         id: get_version
-        run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
@@ -67,5 +69,5 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ steps.platform.outputs.base_image }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
-            BUILD_DATE=${{ github.event.repository.updated_at }}
+            BUILD_DATE=${{ steps.get_version.outputs.BUILD_DATE }}
           cache-from: type=gha,scope=${{ matrix.arch }}

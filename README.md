@@ -179,6 +179,16 @@ docker build \
   -t ghcr.io/fletchto99/nicotine-plus-docker:latest .
 ```
 
+## CI and release publishing
+
+Pull requests run build checks and workflow linting, plus browser smoke tests on
+native AMD64 and ARM64 runners. Browser tests use Node.js 24.
+
+Publishing builds each architecture once with a shared UTC build timestamp and
+uploads the images to GHCR by digest. Both image digests must pass the smoke
+tests before the release tags are updated in GHCR and Docker Hub; the tested
+images are not rebuilt for publishing.
+
 ## Versions
 
 * **09.04.26:** - Migrated to Ubuntu Noble base (from Arch Linux). Nicotine+ installed from official PPA.
