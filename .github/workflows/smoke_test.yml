@@ -203,20 +203,3 @@ jobs:
               echo "::endgroup::"
             fi
           done
-
-  # Preserve the existing required check while gating on both matrix jobs.
-  smoke-test-result:
-    name: Smoke Test
-    needs: smoke-test
-    if: ${{ always() }}
-    runs-on: ubuntu-slim
-    permissions: {}
-    steps:
-      - name: Require both architectures to pass
-        env:
-          RESULT: ${{ needs.smoke-test.result }}
-        run: |
-          if [ "$RESULT" != "success" ]; then
-            echo "::error::Smoke tests did not pass on both architectures (result: $RESULT)"
-            exit 1
-          fi
