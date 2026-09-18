@@ -1,3 +1,4 @@
+import io
 import os
 import re
 import unittest
@@ -76,6 +77,31 @@ class PreviewTests(unittest.TestCase):
                 previews.api(url, token="test-token")
         with self.assertRaises(ValueError):
             previews.NoRedirects().redirect_request(None, None, 302, "", {}, "https://example.com")
+
+    def test_delete_error_includes_response_and_token_scope_guidance(self):
+        url = "https://hub.docker.com/v2/repositories/owner/image/tags/preview-test/"
+        error = HTTPError(
+            url, 403, "Forbidden", {},
+            io.BytesIO(b'{"message":"access token has insufficient scopes"}'),
+        )
+        with patch.object(previews, "build_opener") as opener:
+            opener.return_value.open.side_effect = error
+            with self.assertRaises(RuntimeError) as caught:
+                previews.api(url, token="test-token", method="DELETE")
+        message = str(caught.exception)
+        self.assertIn("HTTP 403", message)
+        self.assertIn("access token has insufficient scopes", message)
+        self.assertIn("DOCKER_PASSWORD includes Delete permission", message)
+
+    def test_api_errors_redact_credentials(self):
+        url = "https://hub.docker.com/v2/auth/token"
+        error = HTTPError(url, 401, "Unauthorized", {}, io.BytesIO(b"test-token test-password"))
+        with patch.object(previews, "build_opener") as opener:
+            opener.return_value.open.side_effect = error
+            with self.assertRaises(RuntimeError) as caught:
+                previews.api(url, token="test-token", method="POST", body={"secret": "test-password"})
+        self.assertNotIn("test-token", str(caught.exception))
+        self.assertNotIn("test-password", str(caught.exception))
 
 
 class CleanupPlanTests(unittest.TestCase):
@@ -195,7 +221,7 @@ class DockerHubTests(unittest.TestCase):
             previews.dockerhub_cleanup()
         self.assertEqual(api.call_count, 3)
 
-    def test_missing_delete_permission_fails_before_deleting(self):
+    def test_missing_repository_admin_access_fails_before_deleting(self):
         self.pages[1]["permissions"]["admin"] = False
         with patch.object(previews, "api", side_effect=self.pages) as api, self.assertRaises(PermissionError):
             previews.dockerhub_cleanup()

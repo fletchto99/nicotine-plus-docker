@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+from urllib.error import HTTPError
 from urllib.parse import quote, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -57,9 +58,22 @@ def api(url, token=None, method="GET", body=None):
         headers["Content-Type"] = "application/json"
         data = json.dumps(body).encode()
     request = Request(url, data=data, headers=headers, method=method)
-    with build_opener(NoRedirects).open(request, timeout=60) as response:
-        data = response.read()
-        return json.loads(data) if data else None
+    try:
+        with build_opener(NoRedirects).open(request, timeout=60) as response:
+            data = response.read()
+            return json.loads(data) if data else None
+    except HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")
+        for secret in [token, (body or {}).get("secret")]:
+            if secret:
+                detail = detail.replace(secret, "[redacted]")
+        message = f"{method} {parsed.netloc}{parsed.path} returned HTTP {error.code}: {detail[:1000]}"
+        if parsed.netloc == "hub.docker.com" and method == "DELETE" and error.code == 403:
+            message += (
+                " Check that the Docker Hub token stored in DOCKER_PASSWORD includes Delete permission;"
+                " repository admin access alone does not establish the token's scope."
+            )
+        raise RuntimeError(message) from None
 
 
 def outputs(values):
@@ -156,7 +170,9 @@ def dockerhub_cleanup():
     repository_url = f"https://hub.docker.com/v2/repositories/{quote(username, safe='')}/{quote(repository, safe='')}/"
     permissions = api(repository_url, token)["permissions"]
     if not permissions["admin"]:
-        raise PermissionError("DOCKER_PASSWORD needs Docker Hub delete/admin permission")
+        raise PermissionError("The Docker Hub account needs repository admin access")
+    if dry_run:
+        print("::notice::Dry-run does not verify the token's Delete permission; repository admin access is a separate check.")
     base = f"{repository_url}tags/"
     url = f"{base}?page_size=100"
     groups = defaultdict(list)
