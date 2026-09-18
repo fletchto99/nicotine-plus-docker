@@ -193,6 +193,24 @@ images are not rebuilt for publishing.
 Scheduled weekly publishes bypass build caches and pull current base images to
 refresh installed dependencies.
 
+### Preview images before merging
+
+Run **Publish Release** manually in GitHub Actions and select your branch.
+After both architectures pass the smoke tests, the workflow publishes
+multi-architecture previews to GHCR and Docker Hub with two tags:
+
+* `preview-<branch>-<branch-hash>`: a reusable tag for the branch. Invalid tag
+  characters are replaced with `-`, long names are truncated, and a 12-character
+  hash of the full Git ref distinguishes branches with similar names.
+* `preview-sha-<full-commit-sha>`: a commit-specific tag. Rerunning the workflow
+  for that commit can update the image; use its digest to pin an exact build.
+
+The workflow summary lists the full image tags and the GHCR digest to pull.
+Preview runs never update version tags, `latest`, or architecture-specific
+release tags, and do not cancel publishing on `main`. Runs on `main` continue
+to publish the normal release tags. Both release and preview attestations use
+the digest produced by that run.
+
 ## Versions
 
 * **09.04.26:** - Migrated to Ubuntu Noble base (from Arch Linux). Nicotine+ installed from official PPA.
