@@ -61,8 +61,9 @@ jobs:
 
             Release notes: https://github.com/nicotine-plus/nicotine-plus/releases/tag/${{ steps.check-release.outputs.version }}
 
-            **Required checks:** This PR uses `GITHUB_TOKEN`, which does not trigger
-            pull request workflows. Close and reopen this PR manually to start
-            the build and smoke-test checks. Repeat after any automated update.
+            **Required checks:** This PR uses `GITHUB_TOKEN`, so pull request
+            workflows require approval. Select **Approve workflows to run** in
+            the PR merge box to start the build and smoke-test checks. Approve
+            new runs after automated updates as needed.
 
             Merging this PR triggers the existing Publish Release workflow.
