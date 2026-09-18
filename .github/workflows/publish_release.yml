@@ -65,17 +65,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set platform variables
-        id: platform
-        run: |
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            echo "docker_platform=linux/arm64" >> "$GITHUB_OUTPUT"
-            echo "base_image=ghcr.io/linuxserver/baseimage-selkies:arm64v8-ubuntunoble" >> "$GITHUB_OUTPUT"
-          else
-            echo "docker_platform=linux/amd64" >> "$GITHUB_OUTPUT"
-            echo "base_image=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Read Current Release Version
         id: get_version
         run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
@@ -98,12 +87,11 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
-          platforms: ${{ steps.platform.outputs.docker_platform }}
+          platforms: linux/${{ matrix.arch }}
           push: true
           pull: true
           no-cache: ${{ github.event_name == 'schedule' }}
           build-args: |
-            BASE_IMAGE=${{ steps.platform.outputs.base_image }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
             BUILD_DATE=${{ needs.prepare.outputs.build_date }}
           outputs: type=image,name=${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true

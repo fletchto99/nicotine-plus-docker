@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
+ARG BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:debiantrixie
 FROM ${BASE_IMAGE}
 
 ARG VERSION
