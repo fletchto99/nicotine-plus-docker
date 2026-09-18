@@ -166,6 +166,9 @@ In this instance `PUID=1000` and `PGID=1000`, to find yours use `id user` as bel
 
 ## Building locally
 
+The build verifies the Nicotine+ release archive against its upstream SHA-256
+checksum before extracting it.
+
 If you want to make local modifications to these images for development purposes or just to customize the logic:
 
 ```bash

@@ -36,6 +36,11 @@ RUN \
     --retry 3 --connect-timeout 15 --max-time 120 \
     -o /tmp/debian-package.zip \
     "https://github.com/nicotine-plus/nicotine-plus/releases/download/${VERSION}/debian-package.zip" && \
+  curl --fail --show-error --location \
+    --retry 3 --connect-timeout 15 --max-time 120 \
+    -o /tmp/debian-package.zip.sha256 \
+    "https://github.com/nicotine-plus/nicotine-plus/releases/download/${VERSION}/debian-package.zip.sha256" && \
+  (cd /tmp && sha256sum --check --strict debian-package.zip.sha256) && \
   python3 -m zipfile -e /tmp/debian-package.zip /tmp/nicotine && \
   DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=3 install --no-install-recommends -y \
     librsvg2-common \
