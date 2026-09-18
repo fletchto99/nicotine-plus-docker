@@ -96,7 +96,7 @@ class CleanupPlanTests(unittest.TestCase):
         unrelated_page = [{"metadata": {"container": {"tags": ["3.3.11"]}}}] * 100
         legacy = f"preview-sha-{SHA}"
         own_page = [{"metadata": {"container": {"tags": [tags_for(REF)[0], legacy]}}}]
-        with patch.object(previews, "api", side_effect=[self.pr, unrelated_page, own_page]) as api, \
+        with patch.object(previews, "api", side_effect=[self.pr, [], unrelated_page, own_page]) as api, \
                 patch.object(previews, "outputs") as output:
             previews.cleanup_plan()
         self.assertIn("page=2", api.call_args.args[0])
@@ -112,6 +112,13 @@ class CleanupPlanTests(unittest.TestCase):
         self.pr["state"] = "open"
         with patch.object(previews, "api", return_value=self.pr), self.assertRaises(ValueError):
             previews.cleanup_plan()
+
+    def test_branch_reused_by_open_pr_is_preserved(self):
+        with patch.object(previews, "api", side_effect=[self.pr, [{"number": 80}]]) as api, \
+                patch.object(previews, "outputs") as output:
+            previews.cleanup_plan()
+        self.assertIn("state=open&head=owner%3Afeature%2Fexample&base=main", api.call_args.args[0])
+        self.assertEqual(output.call_args.args[0], {"enabled": "false"})
 
     def test_open_pr_can_be_dry_run(self):
         self.pr["state"] = "open"
@@ -180,6 +187,7 @@ class DockerHubTests(unittest.TestCase):
             call.args[0] for call in api.call_args_list if call.kwargs.get("method") == "DELETE"
         }
         self.assertEqual(deleted, {self.base + tag + "/" for tag in tags_for(REF)})
+        self.assertEqual(api.call_args.args[0], self.base + tags_for(REF)[0] + "/")
 
     def test_bad_pagination_does_not_receive_token(self):
         self.pages[2]["next"] = "https://api.github.com/other"

@@ -216,6 +216,7 @@ the digest produced by that run.
 Closing a same-repository PR to `main`, with or without merging, removes its
 branch and commit preview tags from both registries. Cleanup cancels any
 in-progress publisher for that branch and never checks out PR code.
+If the branch is already reused by another open PR, its previews are preserved.
 The Docker Hub credential in `DOCKER_PASSWORD` must allow tag deletion.
 
 Weekly GHCR cleanup retains the newest 20 release images and the newest 20

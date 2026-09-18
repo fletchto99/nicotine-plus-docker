@@ -107,6 +107,17 @@ def cleanup_plan():
         raise ValueError("Refusing to clean up the default branch")
 
     owner, package = repository.split("/")
+    if pr["state"] == "closed":
+        head = quote(f"{owner}:{pr['head']['ref']}", safe="")
+        base = quote(os.environ["DEFAULT_BRANCH"], safe="")
+        open_prs = api(
+            f"https://api.github.com/repos/{repository}/pulls?state=open&head={head}&base={base}&per_page=1",
+            token,
+        )
+        if open_prs:
+            print("::notice::Keeping previews because the branch is reused by an open PR")
+            outputs({"enabled": "false"})
+            return
     owner_type = "orgs" if pr["base"]["repo"]["owner"]["type"] == "Organization" else "users"
     endpoint = f"https://api.github.com/{owner_type}/{owner}/packages/container/{quote(package, safe='')}/versions"
     groups = []
@@ -161,6 +172,8 @@ def dockerhub_cleanup():
             groups[digest].append(tag["name"])
         url = page["next"]
     selected = select_preview_tags(groups.values(), ref)
+    # Keep the ownership alias until the last delete so legacy cleanup is retryable.
+    selected.sort(key=lambda tag: tag == preview_metadata(ref)["preview_tag"])
     for tag in selected:
         print(f"{'Would delete' if dry_run else 'Deleting'} Docker Hub tag: {tag}")
         if not dry_run:
