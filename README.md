@@ -193,45 +193,6 @@ images are not rebuilt for publishing.
 Scheduled weekly publishes bypass build caches and pull current base images to
 refresh installed dependencies.
 
-### Preview images before merging
-
-Run **Publish Release** manually in GitHub Actions and select your branch.
-After both architectures pass the smoke tests, the workflow publishes
-multi-architecture previews to GHCR and Docker Hub with two tags:
-
-* `preview-<branch>-<branch-hash>`: a reusable tag for the branch. Invalid tag
-  characters are replaced with `-`, long names are truncated, and a 12-character
-  hash of the full Git ref distinguishes branches with similar names.
-* `preview-sha-<full-commit-sha>-<branch-hash>`: a commit-specific tag scoped to
-  the branch, so closing one PR cannot remove another branch's commit tags.
-  Rerunning the workflow for that commit can update the image; use its digest
-  to pin an exact build.
-
-The workflow summary lists the full image tags and the GHCR digest to pull.
-Preview runs never update version tags, `latest`, or architecture-specific
-release tags, and do not cancel publishing on `main`. Runs on `main` continue
-to publish the normal release tags. Both release and preview attestations use
-the digest produced by that run.
-
-Closing a same-repository PR to `main`, with or without merging, removes its
-branch and commit preview tags from both registries. Cleanup cancels any
-in-progress publisher for that branch and never checks out PR code.
-If the branch is already reused by another open PR, its previews are preserved.
-The Docker Hub credential in `DOCKER_PASSWORD` must allow tag deletion.
-
-Weekly GHCR cleanup retains the newest 20 release images and the newest 20
-preview images **separately**; previews cannot consume release retention slots.
-This counts image versions, not individual aliases. Referenced platform images
-and attestations follow their parent image. Older releases can still expire
-when newer **releases** exceed the limit. Docker Hub release tags are unchanged
-by cleanup.
-
-To inspect cleanup safely, run **Cleanup Images** manually with `dry_run`
-enabled. Leave `pr_number` at `0` for retention, or enter a PR number to
-preview its cleanup plan. Actual manual PR cleanup refuses open PRs. Branches
-without a PR have no close event; their GHCR previews still follow the preview
-retention limit, while their Docker Hub tags require manual removal.
-
 ## Versions
 
 * **09.04.26:** - Migrated to Ubuntu Noble base (from Arch Linux). Nicotine+ installed from official PPA.
