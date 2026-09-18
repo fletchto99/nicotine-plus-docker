@@ -6,6 +6,10 @@ on:
       - main
   workflow_call:
 
+concurrency:
+  group: smoke-test-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 env:
   TEST_IMAGE: nicotine-plus-smoke-test
 
@@ -98,18 +102,45 @@ jobs:
       - name: Verify Selkies web UI loads in browser
         run: |
           cd tests/smoke
-          npm ci --ignore-scripts > /dev/null 2>&1
-          npx playwright install chromium --with-deps > /dev/null 2>&1
+          npm ci --ignore-scripts
+          npx playwright install chromium --with-deps
           node verify-selkies-ui.js
+
+      - name: Start container with custom HTTP port
+        run: |
+          docker run -d \
+            --name smoke-test-custom-port \
+            -e PUID=1000 \
+            -e PGID=1000 \
+            -e CUSTOM_PORT=6082 \
+            --shm-size=1gb \
+            ${{ env.TEST_IMAGE }}:latest
 
       - name: Verify healthcheck status
         run: |
-          STATUS=$(docker inspect --format='{{.State.Health.Status}}' smoke-test)
-          echo "Docker healthcheck status: $STATUS"
-          if [ "$STATUS" != "healthy" ]; then
-            echo "::warning::Container healthcheck status is '$STATUS' (may still be in start period)"
-          fi
+          for CONTAINER in smoke-test smoke-test-custom-port; do
+            for i in $(seq 1 60); do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$CONTAINER")
+              echo "$CONTAINER healthcheck status: $STATUS (attempt $i/60)"
+              if [ "$STATUS" = "healthy" ]; then
+                break
+              fi
+              sleep 2
+            done
+            if [ "$STATUS" != "healthy" ]; then
+              echo "::error::$CONTAINER did not become healthy within 120s (status: $STATUS)"
+              docker inspect --format='{{json .State.Health}}' "$CONTAINER"
+              exit 1
+            fi
+          done
 
       - name: Dump logs on failure
         if: failure()
-        run: docker logs smoke-test
+        run: |
+          for CONTAINER in smoke-test smoke-test-custom-port; do
+            if docker container inspect "$CONTAINER" > /dev/null 2>&1; then
+              echo "::group::$CONTAINER logs"
+              docker logs "$CONTAINER"
+              echo "::endgroup::"
+            fi
+          done

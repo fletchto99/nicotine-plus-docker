@@ -31,9 +31,13 @@ ENV \
   SELKIES_UI_SIDEBAR_SHOW_TRACKPAD="false"
 
 RUN \
+  if [ -z "$VERSION" ]; then \
+    echo "ERROR: VERSION is required. Pass --build-arg VERSION=<Nicotine+ release>." >&2; \
+    exit 1; \
+  fi && \
   echo "**** install nicotine+ ****" && \
   apt-get update && \
-  curl -o /tmp/debian-package.zip -L \
+  curl --fail --show-error --location -o /tmp/debian-package.zip \
     "https://github.com/nicotine-plus/nicotine-plus/releases/download/${VERSION}/debian-package.zip" && \
   python3 -m zipfile -e /tmp/debian-package.zip /tmp/nicotine && \
   DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
@@ -57,4 +61,4 @@ EXPOSE 6080 6081
 
 # healthcheck via the Selkies web UI
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
-  CMD curl -f http://localhost:6080/ || exit 1
+  CMD curl --fail --silent --show-error "http://localhost:${CUSTOM_PORT:-6080}/" || exit 1

@@ -175,6 +175,7 @@ docker build \
   --no-cache \
   --pull \
   --build-arg BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble \
+  --build-arg VERSION="$(cat .github/.current-release)" \
   -t ghcr.io/fletchto99/nicotine-plus-docker:latest .
 ```
 
