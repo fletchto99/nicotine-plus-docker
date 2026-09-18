@@ -178,19 +178,6 @@ docker build \
   -t ghcr.io/fletchto99/nicotine-plus-docker:latest .
 ```
 
-## Automated release updates
-
-The Check Release workflow checks for new Nicotine+ releases daily and can also
-be run manually. When a new version is available, it opens or updates a single
-pull request changing `.github/.current-release` instead of pushing to `main`.
-Merging the pull request triggers the Publish Release workflow.
-
-In Settings > Actions > General > Workflow permissions, enable **Allow GitHub
-Actions to create and approve pull requests**. The workflow uses `GITHUB_TOKEN`,
-so its pull requests do not automatically trigger the required build and
-smoke-test checks. Manually close and reopen the pull request after creation
-or an automated update to start those checks.
-
 ## Versions
 
 * **09.04.26:** - Migrated to Ubuntu Noble base (from Arch Linux). Nicotine+ installed from official PPA.
