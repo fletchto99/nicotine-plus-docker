@@ -176,6 +176,7 @@ docker build \
   --pull \
   --build-arg BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble \
   --build-arg VERSION="$(cat .github/.current-release)" \
+  --build-arg BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
   -t ghcr.io/fletchto99/nicotine-plus-docker:latest .
 ```
 
@@ -188,6 +189,9 @@ Publishing builds each architecture once with a shared UTC build timestamp and
 uploads the images to GHCR by digest. Both image digests must pass the smoke
 tests before the release tags are updated in GHCR and Docker Hub; the tested
 images are not rebuilt for publishing.
+
+Scheduled weekly publishes bypass build caches and pull current base images to
+refresh installed dependencies.
 
 ## Versions
 

@@ -81,6 +81,8 @@ jobs:
           context: .
           platforms: ${{ steps.platform.outputs.docker_platform }}
           push: true
+          pull: true
+          no-cache: ${{ github.event_name == 'schedule' }}
           build-args: |
             BASE_IMAGE=${{ steps.platform.outputs.base_image }}
             VERSION=${{ steps.get_version.outputs.VERSION }}

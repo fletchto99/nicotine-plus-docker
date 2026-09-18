@@ -3,11 +3,7 @@
 ARG BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
 FROM ${BASE_IMAGE}
 
-# set version label
-ARG BUILD_DATE
 ARG VERSION
-LABEL build_version="version:- ${VERSION} Build-date:- ${BUILD_DATE}"
-LABEL maintainer="fletchto99"
 
 ENV \
   LSIO_FIRST_PARTY="false" \
@@ -36,17 +32,16 @@ RUN \
     exit 1; \
   fi && \
   echo "**** install nicotine+ ****" && \
-  apt-get update && \
-  curl --fail --show-error --location -o /tmp/debian-package.zip \
+  apt-get -o Acquire::Retries=3 update && \
+  curl --fail --show-error --location \
+    --retry 3 --connect-timeout 15 --max-time 120 \
+    -o /tmp/debian-package.zip \
     "https://github.com/nicotine-plus/nicotine-plus/releases/download/${VERSION}/debian-package.zip" && \
   python3 -m zipfile -e /tmp/debian-package.zip /tmp/nicotine && \
-  DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+  DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=3 install --no-install-recommends -y \
     librsvg2-common \
     /tmp/nicotine/*.deb && \
   echo "**** cleanup ****" && \
-  printf \
-    "version: ${VERSION}\nBuild-date: ${BUILD_DATE}" \
-    > /build_version && \
   apt-get autoclean && \
   rm -rf \
     /tmp/* \
@@ -54,6 +49,16 @@ RUN \
 
 # add local files
 COPY root/ /
+
+ARG BUILD_DATE
+LABEL \
+  build_version="version:- ${VERSION} Build-date:- ${BUILD_DATE}" \
+  maintainer="fletchto99" \
+  org.opencontainers.image.source="https://github.com/fletchto99/nicotine-plus-docker" \
+  org.opencontainers.image.version="${VERSION}" \
+  org.opencontainers.image.created="${BUILD_DATE}"
+
+RUN printf 'version: %s\nBuild-date: %s\n' "$VERSION" "$BUILD_DATE" > /build_version
 
 # ports and volumes
 VOLUME /config
