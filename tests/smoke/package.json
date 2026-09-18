@@ -3,6 +3,6 @@
   "private": true,
   "description": "CI smoke test dependencies for nicotine-plus-docker",
   "dependencies": {
-    "playwright": "1.60.0"
+    "playwright": "1.63.0"
   }
 }
