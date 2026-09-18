@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: build-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 env:
   GHCR_REGISTRY: ghcr.io
 
@@ -34,9 +38,11 @@ jobs:
             echo "base_image=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Read Current Release Version
+      - name: Read build metadata
         id: get_version
-        run: echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "VERSION=$(cat .github/.current-release)" >> "$GITHUB_OUTPUT"
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
@@ -63,5 +69,5 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ steps.platform.outputs.base_image }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
-            BUILD_DATE=${{ github.event.repository.updated_at }}
+            BUILD_DATE=${{ steps.get_version.outputs.BUILD_DATE }}
           cache-from: type=gha,scope=${{ matrix.arch }}
