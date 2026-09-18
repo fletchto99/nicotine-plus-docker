@@ -28,30 +28,17 @@ jobs:
       build_date: ${{ steps.metadata.outputs.build_date }}
       is_release: ${{ steps.metadata.outputs.is_release }}
       preview_tag: ${{ steps.metadata.outputs.preview_tag }}
+      preview_hash: ${{ steps.metadata.outputs.preview_hash }}
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Generate build and publishing metadata
         id: metadata
         env:
           PUBLISH_REF: ${{ github.ref }}
-          PUBLISH_REF_NAME: ${{ github.ref_name }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          python3 - <<'PY'
-          import datetime
-          import hashlib
-          import os
-          import re
-
-          ref = os.environ["PUBLISH_REF"]
-          is_release = ref == f"refs/heads/{os.environ['DEFAULT_BRANCH']}"
-          slug = re.sub(r"[^a-zA-Z0-9_.-]+", "-", os.environ["PUBLISH_REF_NAME"])[:107]
-          branch_hash = hashlib.sha256(ref.encode()).hexdigest()[:12]
-          build_date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
-              print(f"build_date={build_date}", file=output)
-              print(f"is_release={str(is_release).lower()}", file=output)
-              print(f"preview_tag=preview-{slug}-{branch_hash}", file=output)
-          PY
+        run: python3 scripts/preview_images.py metadata
 
   build:
     name: Build and Push Docker Image
@@ -188,7 +175,7 @@ jobs:
             type=raw,value=${{ steps.get_version.outputs.VERSION }},enable=${{ needs.prepare.outputs.is_release }}
             type=raw,value=latest,enable=${{ needs.prepare.outputs.is_release }}
             type=raw,value=${{ needs.prepare.outputs.preview_tag }},enable=${{ needs.prepare.outputs.is_release != 'true' }}
-            type=sha,format=long,prefix=preview-sha-,enable=${{ needs.prepare.outputs.is_release != 'true' }}
+            type=sha,format=long,prefix=preview-sha-,suffix=-${{ needs.prepare.outputs.preview_hash }},enable=${{ needs.prepare.outputs.is_release != 'true' }}
 
       - name: Resolve digests
         id: digests
