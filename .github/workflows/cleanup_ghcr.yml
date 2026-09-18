@@ -57,7 +57,6 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-      packages: read
     outputs:
       enabled: ${{ steps.plan.outputs.enabled }}
       branch_ref: ${{ steps.plan.outputs.branch_ref }}
@@ -86,14 +85,8 @@ jobs:
       group: ${{ needs.preview-plan.outputs.dry_run == 'true' && format('cleanup-preview-dry-run-{0}', github.run_id) || format('publish-preview-{0}', needs.preview-plan.outputs.branch_ref) }}
       cancel-in-progress: true
     permissions:
-      contents: read
       packages: write
     steps:
-      - name: Checkout trusted workflow code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event_name == 'pull_request_target' && github.event.repository.default_branch || github.sha }}
-
       - name: Delete this branch's GHCR previews
         uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1
         with:
@@ -102,12 +95,3 @@ jobs:
           delete-untagged: false
           dry-run: ${{ needs.preview-plan.outputs.dry_run }}
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Delete this branch's Docker Hub previews
-        if: ${{ !cancelled() }}
-        env:
-          PUBLISH_REF: ${{ needs.preview-plan.outputs.branch_ref }}
-          DRY_RUN: ${{ needs.preview-plan.outputs.dry_run }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        run: python3 scripts/preview_images.py dockerhub-cleanup

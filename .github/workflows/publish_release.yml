@@ -158,6 +158,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
+        if: ${{ needs.prepare.outputs.is_release == 'true' }}
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -169,7 +170,7 @@ jobs:
         with:
           images: |
             ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}
-            ${{ env.DOCKERHUB_IMAGE_NAME }}
+            ${{ needs.prepare.outputs.is_release == 'true' && env.DOCKERHUB_IMAGE_NAME || '' }}
           flavor: latest=false
           tags: |
             type=raw,value=${{ steps.get_version.outputs.VERSION }},enable=${{ needs.prepare.outputs.is_release }}
@@ -230,6 +231,7 @@ jobs:
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
 
       - name: Create manifest list and push (Docker Hub)
+        if: ${{ needs.prepare.outputs.is_release == 'true' }}
         run: |
           TAG_ARGS=$(jq -r --arg prefix "${{ env.GHCR_REGISTRY }}/" \
             '.tags[] | select(startswith($prefix) | not) | "-t", .' <<< "$DOCKER_METADATA_OUTPUT_JSON")

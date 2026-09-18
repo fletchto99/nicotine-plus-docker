@@ -1,5 +1,4 @@
 import argparse
-from collections import defaultdict
 import datetime
 import hashlib
 import json
@@ -27,39 +26,21 @@ def preview_pattern(ref):
     )
 
 
-def select_preview_tags(groups, ref):
-    pattern = re.compile(preview_pattern(ref))
-    legacy = re.compile(r"preview-sha-[0-9a-f]{40}")
-    selected = set()
-    for tags in groups:
-        owned = {tag for tag in tags if pattern.fullmatch(tag)}
-        selected.update(owned)
-        # Migrate the original unscoped SHA tags only when ownership is unambiguous.
-        if owned and all(tag in owned or legacy.fullmatch(tag) for tag in tags):
-            selected.update(tags)
-    return sorted(selected)
-
-
 class NoRedirects(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise ValueError("Refusing an API redirect with registry credentials")
 
 
-def api(url, token=None, method="GET", body=None):
+def api(url, token):
     parsed = urlsplit(url)
-    if parsed.scheme != "https" or parsed.netloc not in {"api.github.com", "hub.docker.com"}:
+    if parsed.scheme != "https" or parsed.netloc != "api.github.com":
         raise ValueError(f"Unexpected API origin: {parsed.netloc}")
     headers = {"Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    data = None
-    if body is not None:
-        headers["Content-Type"] = "application/json"
-        data = json.dumps(body).encode()
-    request = Request(url, data=data, headers=headers, method=method)
+    request = Request(url, headers=headers)
     with build_opener(NoRedirects).open(request, timeout=60) as response:
-        data = response.read()
-        return json.loads(data) if data else None
+        return json.load(response)
 
 
 def outputs(values):
@@ -106,7 +87,7 @@ def cleanup_plan():
     if pr["head"]["ref"] == os.environ["DEFAULT_BRANCH"]:
         raise ValueError("Refusing to clean up the default branch")
 
-    owner, package = repository.split("/")
+    owner = repository.split("/")[0]
     if pr["state"] == "closed":
         head = quote(f"{owner}:{pr['head']['ref']}", safe="")
         base = quote(os.environ["DEFAULT_BRANCH"], safe="")
@@ -118,22 +99,8 @@ def cleanup_plan():
             print("::notice::Keeping previews because the branch is reused by an open PR")
             outputs({"enabled": "false"})
             return
-    owner_type = "orgs" if pr["base"]["repo"]["owner"]["type"] == "Organization" else "users"
-    endpoint = f"https://api.github.com/{owner_type}/{owner}/packages/container/{quote(package, safe='')}/versions"
-    groups = []
-    page = 1
-    while True:
-        versions = api(f"{endpoint}?per_page=100&page={page}", token)
-        groups.extend(version["metadata"]["container"]["tags"] for version in versions)
-        if len(versions) < 100:
-            break
-        page += 1
-    selected = select_preview_tags(groups, ref)
-    print("GHCR preview tags selected:", json.dumps(selected))
-    legacy = [tag for tag in selected if re.fullmatch(r"preview-sha-[0-9a-f]{40}", tag)]
     pattern = preview_pattern(ref)
-    if legacy:
-        pattern = f"(?:{pattern}|^(?:{'|'.join(map(re.escape, legacy))})$)"
+    print("GHCR preview tag filter:", pattern)
     outputs({
         "enabled": "true",
         "branch_ref": ref,
@@ -142,51 +109,11 @@ def cleanup_plan():
     })
 
 
-def dockerhub_cleanup():
-    ref = os.environ["PUBLISH_REF"]
-    username = os.environ["DOCKER_USERNAME"]
-    repository = os.environ["GITHUB_REPOSITORY"].split("/")[1]
-    dry_run = dry_run_enabled()
-    token = api(
-        "https://hub.docker.com/v2/auth/token",
-        method="POST",
-        body={"identifier": username, "secret": os.environ["DOCKER_PASSWORD"]},
-    )["access_token"]
-    print(f"::add-mask::{token}")
-    repository_url = f"https://hub.docker.com/v2/repositories/{quote(username, safe='')}/{quote(repository, safe='')}/"
-    permissions = api(repository_url, token)["permissions"]
-    if not permissions["admin"]:
-        raise PermissionError("DOCKER_PASSWORD needs Docker Hub delete/admin permission")
-    base = f"{repository_url}tags/"
-    url = f"{base}?page_size=100"
-    groups = defaultdict(list)
-    while url:
-        # Never send the Hub token to another host or repository via pagination.
-        if not url.startswith(base):
-            raise ValueError("Unexpected Docker Hub pagination URL")
-        page = api(url, token)
-        for tag in page["results"]:
-            digest = tag["digest"]
-            if not digest:
-                raise ValueError(f"Missing Docker Hub digest for tag {tag['name']}")
-            groups[digest].append(tag["name"])
-        url = page["next"]
-    selected = select_preview_tags(groups.values(), ref)
-    # Keep the ownership alias until the last delete so legacy cleanup is retryable.
-    selected.sort(key=lambda tag: tag == preview_metadata(ref)["preview_tag"])
-    for tag in selected:
-        print(f"{'Would delete' if dry_run else 'Deleting'} Docker Hub tag: {tag}")
-        if not dry_run:
-            api(f"{base}{quote(tag, safe='')}/", token, method="DELETE")
-    print(f"{len(selected)} Docker Hub preview tags {'selected' if dry_run else 'deleted'}")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("operation", choices=["metadata", "cleanup-plan", "dockerhub-cleanup"])
+    parser.add_argument("operation", choices=["metadata", "cleanup-plan"])
     operation = parser.parse_args().operation
     {
         "metadata": build_metadata,
         "cleanup-plan": cleanup_plan,
-        "dockerhub-cleanup": dockerhub_cleanup,
     }[operation]()
