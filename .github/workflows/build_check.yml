@@ -27,17 +27,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set platform variables
-        id: platform
-        run: |
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            echo "docker_platform=linux/arm64" >> "$GITHUB_OUTPUT"
-            echo "base_image=ghcr.io/linuxserver/baseimage-selkies:arm64v8-ubuntunoble" >> "$GITHUB_OUTPUT"
-          else
-            echo "docker_platform=linux/amd64" >> "$GITHUB_OUTPUT"
-            echo "base_image=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Read build metadata
         id: get_version
         run: |
@@ -64,10 +53,9 @@ jobs:
         with:
           context: .
           file: Dockerfile
-          platforms: ${{ steps.platform.outputs.docker_platform }}
+          platforms: linux/${{ matrix.arch }}
           push: false
           build-args: |
-            BASE_IMAGE=${{ steps.platform.outputs.base_image }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
             BUILD_DATE=${{ steps.get_version.outputs.BUILD_DATE }}
           cache-from: type=gha,scope=${{ matrix.arch }}

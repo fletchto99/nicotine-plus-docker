@@ -174,7 +174,6 @@ cd nicotine-plus-docker
 docker build \
   --no-cache \
   --pull \
-  --build-arg BASE_IMAGE=ghcr.io/linuxserver/baseimage-selkies:ubuntunoble \
   --build-arg VERSION="$(cat .github/.current-release)" \
   --build-arg BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
   -t ghcr.io/fletchto99/nicotine-plus-docker:latest .
@@ -195,6 +194,7 @@ refresh installed dependencies.
 
 ## Versions
 
+* **17.09.26:** - Migrated to Debian Trixie base (from Ubuntu Noble).
 * **09.04.26:** - Migrated to Ubuntu Noble base (from Arch Linux). Nicotine+ installed from official PPA.
 * **02.04.26:** - Migrated to baseimage-selkies (from baseimage-kasmvnc). Arch Linux base with Wayland support. **Breaking:** Remote HTTP access no longer works; use HTTPS (`:6081`) or a reverse proxy instead (see [Application Setup](#application-setup)).
 * **19.07.23:** - Initial release.

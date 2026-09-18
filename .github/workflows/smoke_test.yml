@@ -29,10 +29,8 @@ jobs:
         include:
           - arch: amd64
             runner: ubuntu-24.04
-            base_image: ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
           - arch: arm64
             runner: ubuntu-24.04-arm
-            base_image: ghcr.io/linuxserver/baseimage-selkies:arm64v8-ubuntunoble
     permissions:
       contents: read
       packages: read
@@ -62,7 +60,6 @@ jobs:
           load: true
           tags: ${{ env.TEST_IMAGE }}:latest
           build-args: |
-            BASE_IMAGE=${{ matrix.base_image }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
             BUILD_DATE=${{ steps.get_version.outputs.BUILD_DATE }}
           cache-from: type=gha,scope=${{ matrix.arch }}
