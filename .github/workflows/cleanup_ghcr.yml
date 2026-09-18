@@ -20,14 +20,14 @@ jobs:
       group: image-retention
       cancel-in-progress: false
     steps:
-      - name: Clean up disposable images older than 24 hours
+      - name: Clean up preview images older than 24 hours
         uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1
         with:
           use-regex: true
           delete-tags: ^preview-
           exclude-tags: ^(?!preview-).+
-          delete-untagged: true
-          delete-orphaned-images: true
+          delete-untagged: false
+          delete-orphaned-images: false
           older-than: 24 hours
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
           token: ${{ secrets.GITHUB_TOKEN }}
