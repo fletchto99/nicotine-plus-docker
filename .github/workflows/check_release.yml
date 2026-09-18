@@ -7,6 +7,11 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
+
+concurrency:
+  group: check-release
+  cancel-in-progress: false
 
 jobs:
   check-release:
@@ -15,12 +20,14 @@ jobs:
     steps:
       - name: Check Out Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
 
       - name: Check for Latest Upstream Release
         id: check-release
         run: |
           echo "Fetching latest Nicotine+ release from GitHub..."
-          LATEST_VERSION=$(curl -sL "https://api.github.com/repos/nicotine-plus/nicotine-plus/releases/latest" \
+          LATEST_VERSION=$(curl -fsSL "https://api.github.com/repos/nicotine-plus/nicotine-plus/releases/latest" \
             | jq -r '.tag_name')
           if [ -z "$LATEST_VERSION" ] || [ "$LATEST_VERSION" = "null" ]; then
             echo "::error::Failed to fetch latest Nicotine+ version from GitHub."
@@ -31,19 +38,32 @@ jobs:
 
           echo "Previous Release: $PREV_VERSION"
           echo "Current Release: $LATEST_VERSION"
+          echo "version=$LATEST_VERSION" >> "$GITHUB_OUTPUT"
 
           if [ "$LATEST_VERSION" != "$PREV_VERSION" ]; then
             echo "New release detected: $LATEST_VERSION"
             echo "$LATEST_VERSION" > .github/.current-release
-            git add .github/.current-release
-
-            if git diff --cached --quiet; then
-              echo "No changes to commit."
-            else
-              git -c user.name="GitHub Actions" -c user.email="actions@github.com" \
-                commit -m "update version to $LATEST_VERSION"
-              git push origin main || { echo '::error::Push failed'; exit 1; }
-            fi
           else
             echo "No new release detected."
           fi
+
+      - name: Create Release Update Pull Request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          add-paths: .github/.current-release
+          branch: automation/update-nicotine-release
+          base: main
+          delete-branch: true
+          commit-message: "Update Nicotine+ to ${{ steps.check-release.outputs.version }}"
+          title: "Update Nicotine+ to ${{ steps.check-release.outputs.version }}"
+          body: |
+            Updates `.github/.current-release` to the latest upstream Nicotine+ release.
+
+            Release notes: https://github.com/nicotine-plus/nicotine-plus/releases/tag/${{ steps.check-release.outputs.version }}
+
+            **Required checks:** This PR uses `GITHUB_TOKEN`, so pull request
+            workflows require approval. Select **Approve workflows to run** in
+            the PR merge box to start the build and smoke-test checks. Approve
+            new runs after automated updates as needed.
+
+            Merging this PR triggers the existing Publish Release workflow.
