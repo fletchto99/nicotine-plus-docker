@@ -97,7 +97,7 @@ jobs:
 
       - name: Verify Selkies web UI loads in browser
         run: |
-          cd scripts
+          cd tests/smoke
           npm ci --ignore-scripts > /dev/null 2>&1
           npx playwright install chromium --with-deps > /dev/null 2>&1
           node verify-selkies-ui.js
