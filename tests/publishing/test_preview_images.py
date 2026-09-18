@@ -53,7 +53,7 @@ class PreviewTests(unittest.TestCase):
         for tag in other + releases + [own[0] + "-extra"]:
             self.assertIsNone(re.fullmatch(previews.preview_pattern(REF), tag))
 
-    def test_all_commit_tags_for_branch_are_selected(self):
+    def test_cleanup_also_matches_existing_commit_tags_for_branch(self):
         groups = [tags_for(REF, f"{i:040x}") for i in range(250)]
         selected = {tag for group in groups for tag in group if re.fullmatch(previews.preview_pattern(REF), tag)}
         self.assertEqual(len(selected), 251)

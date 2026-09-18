@@ -20,6 +20,7 @@ def preview_metadata(ref):
 
 def preview_pattern(ref):
     metadata = preview_metadata(ref)
+    # Also clean up SHA aliases published before previews became branch-only.
     return (
         rf"^(?:{re.escape(metadata['preview_tag'])}|"
         rf"preview-sha-[0-9a-f]{{40}}-{metadata['preview_hash']})$"

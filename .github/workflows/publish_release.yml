@@ -28,7 +28,6 @@ jobs:
       build_date: ${{ steps.metadata.outputs.build_date }}
       is_release: ${{ steps.metadata.outputs.is_release }}
       preview_tag: ${{ steps.metadata.outputs.preview_tag }}
-      preview_hash: ${{ steps.metadata.outputs.preview_hash }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -176,7 +175,6 @@ jobs:
             type=raw,value=${{ steps.get_version.outputs.VERSION }},enable=${{ needs.prepare.outputs.is_release }}
             type=raw,value=latest,enable=${{ needs.prepare.outputs.is_release }}
             type=raw,value=${{ needs.prepare.outputs.preview_tag }},enable=${{ needs.prepare.outputs.is_release != 'true' }}
-            type=sha,format=long,prefix=preview-sha-,suffix=-${{ needs.prepare.outputs.preview_hash }},enable=${{ needs.prepare.outputs.is_release != 'true' }}
 
       - name: Resolve digests
         id: digests
