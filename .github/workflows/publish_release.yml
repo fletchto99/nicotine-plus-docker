@@ -28,17 +28,27 @@ jobs:
       build_date: ${{ steps.metadata.outputs.build_date }}
       is_release: ${{ steps.metadata.outputs.is_release }}
       preview_tag: ${{ steps.metadata.outputs.preview_tag }}
-      preview_hash: ${{ steps.metadata.outputs.preview_hash }}
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - name: Generate build and publishing metadata
         id: metadata
+        shell: bash
         env:
           PUBLISH_REF: ${{ github.ref }}
+          PUBLISH_REF_NAME: ${{ github.ref_name }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: python3 scripts/preview_images.py metadata
+        run: |
+          SLUG=$(printf '%s' "$PUBLISH_REF_NAME" | LC_ALL=C sed -E 's/[^a-zA-Z0-9_.-]+/-/g' | cut -c1-107)
+          BRANCH_HASH=$(printf '%s' "$PUBLISH_REF" | sha256sum | cut -c1-12)
+          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          IS_RELEASE=false
+          if [[ "$PUBLISH_REF" == "refs/heads/$DEFAULT_BRANCH" ]]; then
+            IS_RELEASE=true
+          fi
+          {
+            echo "build_date=$BUILD_DATE"
+            echo "is_release=$IS_RELEASE"
+            echo "preview_tag=preview-${SLUG}-${BRANCH_HASH}"
+          } >> "$GITHUB_OUTPUT"
 
   build:
     name: Build and Push Docker Image
@@ -158,6 +168,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Log in to Docker Hub
+        if: ${{ needs.prepare.outputs.is_release == 'true' }}
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -169,13 +180,12 @@ jobs:
         with:
           images: |
             ${{ env.GHCR_REGISTRY }}/${{ env.GHCR_IMAGE_NAME }}
-            ${{ env.DOCKERHUB_IMAGE_NAME }}
+            ${{ needs.prepare.outputs.is_release == 'true' && env.DOCKERHUB_IMAGE_NAME || '' }}
           flavor: latest=false
           tags: |
             type=raw,value=${{ steps.get_version.outputs.VERSION }},enable=${{ needs.prepare.outputs.is_release }}
             type=raw,value=latest,enable=${{ needs.prepare.outputs.is_release }}
             type=raw,value=${{ needs.prepare.outputs.preview_tag }},enable=${{ needs.prepare.outputs.is_release != 'true' }}
-            type=sha,format=long,prefix=preview-sha-,suffix=-${{ needs.prepare.outputs.preview_hash }},enable=${{ needs.prepare.outputs.is_release != 'true' }}
 
       - name: Resolve digests
         id: digests
@@ -230,6 +240,7 @@ jobs:
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
 
       - name: Create manifest list and push (Docker Hub)
+        if: ${{ needs.prepare.outputs.is_release == 'true' }}
         run: |
           TAG_ARGS=$(jq -r --arg prefix "${{ env.GHCR_REGISTRY }}/" \
             '.tags[] | select(startswith($prefix) | not) | "-t", .' <<< "$DOCKER_METADATA_OUTPUT_JSON")
