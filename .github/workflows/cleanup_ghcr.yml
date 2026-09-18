@@ -30,17 +30,7 @@ jobs:
     permissions:
       packages: write
     steps:
-      - name: Retain the newest 20 release images
-        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1
-        with:
-          exclude-tags: preview-*
-          delete-untagged: false
-          delete-orphaned-images: true
-          keep-n-tagged: 20
-          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Retain the newest 20 preview images separately
+      - name: Retain the newest 20 preview images
         uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1
         with:
           use-regex: true
@@ -51,10 +41,11 @@ jobs:
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete untagged images older than 24 hours
+      - name: Clean up old untagged images and orphaned artifacts
         uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1
         with:
           delete-untagged: true
+          delete-orphaned-images: true
           older-than: 24 hours
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
           token: ${{ secrets.GITHUB_TOKEN }}
